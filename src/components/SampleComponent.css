@@ -1,0 +1,145 @@
+/* Sample Component CSS - Matching User's Design System */
+
+.custom__module {
+  display: flex;
+  width: 424px;
+  padding: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.custom__module--wrapper {
+  display: flex;
+  padding: 4px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  align-self: stretch;
+  border-radius: 18px;
+  background: #F9F9F9;
+}
+
+.custom__module--wrapper-container {
+  display: flex;
+  padding: 16px;
+  flex-direction: column;
+  align-items: center;
+  align-self: stretch;
+  border-radius: 18px;
+  border: 1px solid #F0F0F0;
+  background: #FFF;
+}
+
+.custom__module--wrapper-container-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
+  align-self: stretch;
+}
+
+.custom__module--contents {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  align-self: stretch;
+}
+
+.custom__module--contents-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  align-self: stretch;
+}
+
+.custom__module--contents-input {
+  display: flex;
+  padding: 4px;
+  align-items: center;
+  gap: 8px;
+  align-self: stretch;
+  border-radius: 14px;
+  border: 0.5px solid #F0F0F0;
+  background: #FFF;
+}
+
+.custom__module--contents-input-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 0 0;
+}
+
+.custom__module--icon-box {
+  display: flex;
+  padding: 8px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 12px;
+  border: 0.5px solid #F0F0F0;
+  background: #FFF;
+}
+
+.module__description {
+  display: flex;
+  padding: 4px 0;
+  align-items: center;
+  gap: 10px;
+  flex: 1 0 0;
+}
+
+.module__description span {
+  color: #000;
+  text-align: center;
+  font-family: Inter;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.custom__module--drop-down {
+  display: flex;
+  width: 78px;
+  padding: 6px 8px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  align-self: stretch;
+  border-radius: 12px;
+  border: 1px solid #F0F0F0;
+  background: #FFF;
+}
+
+.custom__module--drop-down span {
+  color: #000;
+  text-align: center;
+  font-family: Inter;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: normal;
+}
+
+.custom__module--actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  align-self: stretch;
+}
+
+/* Choose Size Label Styles */
+.choose-size-label {
+  border-radius: 12px;
+  border: 0.5px solid #F0F0F0;
+  background: #FFF;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #000;
+  font-family: Inter;
+} 

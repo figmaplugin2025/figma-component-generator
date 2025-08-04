@@ -1,0 +1,34 @@
+{
+  "name": "My React Plugin (Dev)",
+  "id": "my-react-plugin-dev",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "http://localhost:5173/",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://www.gstatic.com",
+      "https://firebaseapp.com",
+      "https://googleapis.com",
+      "https://identitytoolkit.googleapis.com",
+      "https://securetoken.googleapis.com",
+      "https://firestore.googleapis.com",
+      "http://localhost:5173",
+      "https://picsum.photos",
+      "https://fastly.picsum.photos",
+      "https://api.figma.com",
+      "https://figma-alpha-api.s3.us-west-2.amazonaws.com"
+    ]
+  },
+  "parameters": [
+    {
+      "name": "Search",
+      "key": "search"
+    }
+  ]
+} 

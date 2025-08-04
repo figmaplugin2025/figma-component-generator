@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Figma Plugin - Dashboard Style</title>
+  <meta charset="UTF-8">
+  <style>
+html, body, .container {
+  width: 100%;
+  max-width: 440px;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 2px;
+}
+html, body {
+  font-family: 'Inter', sans-serif;
+  overflow-y: hidden; /* Prevent vertical scrollbar during animation */
+}
+body > * {
+  width: 100%;
+}
+/*
+
+
+Filling the container
+
+
+*/
+.container, .navigation, .navigation-row, .first-row, .first-row-input-container, .second-row, .second-row-left-input-container, .second-row-right-input-container, .third-row, .third-row-input-container, .third-row-input-icon-container, .third-row-pill-icon, .third-row-input, .third-row-volts-container, .third-row-volts-text, .third-row-left-btn, .news-card, .categories-card, .categories-card-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+/*
+
+
+Navigation
+
+
+*/
+.navigation {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  background: #F9F9F9;
+  border-radius: 16px;
+  box-sizing: border-box;
+  border: 0.5px solid #F0F0F0;
+  padding: 3px 3px 3px 3px;
+  gap: 4px;
+  height: auto; /* Ensure height hugs content */
+  min-height: 0; /* Prevent min-height from causing extra space */
+  /* Remove all transitions */
+  max-height: none;
+  overflow: hidden;
+  overflow-y: hidden; /* Prevent vertical scrollbars during animation */
+  transition: padding 200ms;
+}
+.navigation-row {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 16px;
+  padding: 8px;
+  border: 1.5px solid #F0F0F0;
+}
+.nav-home, .nav-user, .nav-search, .nav-bell, .nav-menu {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  gap: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: transparent;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: background 300ms ease-out;
+}
+.nav-home:hover, .nav-user:hover, .nav-search:hover, .nav-bell:hover, .nav-menu:hover {
+  background: #F9F9F9;
+}
+.nav-home {
+  border: 0.5px solid #F0F0F0;
+}
+.nav-icons-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  height: 36px;
+  border: 0.5px solid #F0F0F0;
+}
+.nav-svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+/*
+
+
+#First Row 1111111111111
+
+
+*/
+
+.first-row,
+.second-row {
+  display: none;
+  gap: 4px;
+  width: 100%;
+}
+.first-row.active {
+  display: flex;
+}
+.second-row.active {
+  display: flex;
+}
+/*
+
+
+#First Row Left
+
+
+*/
+.first-row-left {
+  border-radius: 12px;
+  min-width: 60px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.first-row-input-container {
+  border-radius: 16px;
+  background: #fff;
+  padding: 4px;
+  display: flex;
+  align-items: stretch; /* Ensures children fill height */
+  height: 100%;
+  width: 100%;
+  border: 1.5px solid #F0F0F0;
+}
+.first-row-input-icon-container {
+  height: 100%;
+}
+.first-row-pill-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #F0F0F0;
+}
+.first-row-input {
+  border: none;
+  outline: none;
+  padding: 6px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #222;
+  font-weight: 500;
+  width: 100%;
+}
+/*
+#Button
+*/
+.first-row-left-btn {
+  background: #FF6A00;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.first-row-left-btn:hover {
+  background: #e65c00;
+}
+
+/*
+
+
+#First Row Right
+
+
+*/
+.first-row-right {
+  width: fit-content;
+  height: stretch;
+}
+.google-login-btn {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #F0F0F0;
+  border-radius: 16px;
+  padding: 4px;
+  color: #222;
+  cursor: pointer;
+  transition: width 0.3s cubic-bezier(0.4,0,0.2,1), background 0.2s, border 0.2s;
+  outline: none;
+  overflow: hidden;
+  width: 44px; /* icon only */
+}
+
+.google-login-btn:hover,
+.google-login-btn:focus {
+  width: 160px; /* enough for icon + text */
+  gap: 4px;
+}
+
+.google-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #F0F0F0;
+  flex-shrink: 0;
+}
+
+.google-login-text {
+  opacity: 0;
+  max-width: 0;
+  margin-left: 0;
+  white-space: nowrap;
+  color: #222;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), max-width 0.3s cubic-bezier(0.4,0,0.2,1), margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  display: inline-block;
+}
+
+.google-login-btn:hover .google-login-text,
+.google-login-btn:focus .google-login-text {
+  opacity: 1;
+  max-width: fit-content;
+  margin-left: 4px;
+}
+
+.google-login-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #222;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/*
+
+
+#Second Row
+
+
+*/
+.second-row {
+  display: none;
+  gap: 4px;
+  width: 100%;
+
+}
+.second-row.active {
+  display: flex;
+}
+/*
+
+
+#Second Row Left
+
+
+*/
+.second-row-left {
+  border-radius: 12px;
+  min-width: 60px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.second-row-left-input-container {
+  border-radius: 16px;
+  background: #fff;
+  padding: 4px;
+  display: flex;
+  align-items: stretch; /* Ensures children fill height */
+  height: 100%;
+  width: 100%;
+  border: 1.5px solid #F0F0F0;
+}
+.second-row-left-input-icon-container {
+  height: 100%;
+}
+.second-row-left-pill-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #F0F0F0;
+}
+.second-row-left-input {
+  border: none;
+  outline: none;
+  padding: 6px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #222;
+  font-weight: 500;
+  width: 100%;
+}
+/*
+
+
+#Second Row Right
+
+
+*/
+.second-row-right {
+  border-radius: 12px;
+  min-width: 60px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+.second-row-right-input-container {
+  border-radius: 16px;
+  background: #fff;
+  padding: 4px;
+  display: flex;
+  align-items: stretch; /* Ensures children fill height */
+  height: 100%;
+  width: 100%;
+  border: 1.5px solid #F0F0F0;
+}
+.second-row-right-input-icon-container {
+  height: 100%;
+}
+.second-row-right-pill-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #F0F0F0;
+}
+.second-row-right-input {
+  border: none;
+  outline: none;
+  padding: 6px 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #222;
+  font-weight: 500;
+  width: 100%;
+}
+
+/*
+
+
+#Third Row
+
+
+*/
+.third-row {
+  display: none;
+  gap: 4px;
+  width: 100%;
+}
+.third-row.active {
+  display: flex;
+}
+/*
+
+
+#Third Row Left
+
+
+*/
+.third-row-left {
+  border-radius: 12px;
+  min-width: 60px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  background: #ffffff;
+}
+.third-row-input-container {
+  border-radius: 16px;
+  padding: 4px;
+  display: flex;
+  align-items: stretch; /* Ensures children fill height */
+  justify-content: space-between;
+  height: 100%;
+  width: 100%;
+  border: 1.5px solid #F0F0F0;
+}
+.third-row-left-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+.third-row-input-icon-container {
+  height: 100%;
+  width: fit-content;
+}
+.third-row-pill-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #F0F0F0;
+  background: #FF5C0A;
+}
+.third-row-input {
+  border: none;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #222;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  width: fit-content;
+}
+.third-row-volts-container {
+  padding: 4px 8px;
+  background: #FFE2D4;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-width: fit-content;
+}
+.third-row-volts-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #FF5C0A;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.third-row-left-btn {
+  background: #FF6A00;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: fit-content;
+  padding-left: 12px;
+  padding-right: 12px;
+  white-space: nowrap;
+}
+.first-row-left-btn {
+  background: #FF6A00;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: fit-content;
+  padding-left: 12px;
+  padding-right: 12px;
+  white-space: nowrap;
+}
+.third-row-left-btn:hover {
+  background: #e65c00;
+}
+/*
+
+
+#Third Row Right
+
+
+*/
+.third-row-right {
+  width: fit-content;
+  height: stretch;
+}
+.logout-btn {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #F0F0F0;
+  border-radius: 16px;
+  padding: 4px;
+  color: #222;
+  cursor: pointer;
+  transition: width 0.3s cubic-bezier(0.4,0,0.2,1), background 0.2s, border 0.2s;
+  outline: none;
+  overflow: hidden;
+  width: 44px; /* icon only */
+}
+.logout-btn:hover,
+.logout-btn:focus {
+  width: 100px; /* enough for icon + text */
+  gap: 4px;
+}
+.logout-icon-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #F0F0F0;
+  flex-shrink: 0;
+}
+.logout-text {
+  opacity: 0;
+  max-width: 0;
+  margin-left: 0;
+  white-space: nowrap;
+  color: #222;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), max-width 0.3s cubic-bezier(0.4,0,0.2,1), margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  display: inline-block;
+}
+.logout-btn:hover .logout-text,
+.logout-btn:focus .logout-text {
+  opacity: 1;
+  max-width: fit-content;
+  margin-left: 4px;
+}
+/*
+
+
+#News card
+
+
+*/
+.news-card {
+  display: flex;
+  padding: 3px;
+  align-items: center;
+  gap: 10px;
+  border-radius: 18px;
+  border: 0.5px solid #F0F0F0;
+  background: #FFF;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.news-card-content {
+  position: relative;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 16px;
+  padding: 12px;
+  min-height: 120px;
+  height: 120px;
+  width: 100%;
+  display: grid;
+  grid-template-areas: 
+    "top-left top-right"
+    "bottom-left bottom-right";
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.news-card-top-left {
+  grid-area: top-left;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.news-card-subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #FFFFFF;
+  font-weight: 400;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+
+.news-card-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  color: #FFFFFF;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.news-card-bottom-left {
+  grid-area: bottom-left;
+  display: flex;
+  align-items: flex-end;
+}
+
+.news-card-button {
+  background: #FFFFFF;
+  color: #1F2937;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.news-card-button:hover {
+  background: #F3F4F6;
+  transform: translateY(-1px);
+}
+
+.news-card-bottom-right {
+  grid-area: bottom-right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+
+.nav-btn-group {
+  display: flex;
+  gap: 4px;
+  background-color: #FFF;
+  padding: 2px;
+}
+.nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  padding-left: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.2s, width 0.25s cubic-bezier(0.4,0,0.2,1), padding 0.25s cubic-bezier(0.4,0,0.2,1);
+  position: relative;
+  border: 1.5px solid #F0F0F0;
+  overflow: hidden;
+  width: 32px;
+  box-sizing: border-box;
+}
+.nav-btn .nav-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+.nav-btn svg {
+  height: 12px;
+  width: 12px;
+  display: block;
+}
+.nav-btn .nav-btn-text {
+  font-size: 14px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  max-width: 0;
+  margin-left: 0;
+  white-space: nowrap;
+  color: #222;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.25s cubic-bezier(0.4,0,0.2,1), max-width 0.25s cubic-bezier(0.4,0,0.2,1), margin-left 0.25s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.nav-btn.nav-btn-expand .nav-btn-text,
+.nav-btn:hover .nav-btn-text {
+  opacity: 1;
+  max-width: 80px;
+  margin-left: 6px;
+}
+.nav-btn.nav-btn-expand,
+.nav-btn:hover {
+  width: auto;
+  min-width: 32px;
+  height: 32px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+/*
+
+
+#Multi-news-nav-bar
+
+
+*/
+.multi-news-nav-group {
+  display: flex;
+  gap: 8px;
+}
+.multi-news-nav-btn {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid #F0F0F0;
+  border-radius: 12px;
+  padding: 4px;
+  color: #222;
+  cursor: pointer;
+  transition: width 0.3s cubic-bezier(0.4,0,0.2,1), background 0.2s, border 0.2s;
+  outline: none;
+  overflow: hidden;
+  width: 34px;
+}
+.multi-news-nav-btn:hover,
+.multi-news-nav-btn:focus {
+  gap: 4px;
+  padding-right: 8px;
+}
+
+/* Individual button widths */
+.multi-news-nav-btn:nth-child(1):hover,
+.multi-news-nav-btn:nth-child(1):focus {
+  width: 70px; /* Nav */
+}
+
+.multi-news-nav-btn:nth-child(2):hover,
+.multi-news-nav-btn:nth-child(2):focus {
+  width: 80px; /* Card */
+}
+
+.multi-news-nav-btn:nth-child(3):hover,
+.multi-news-nav-btn:nth-child(3):focus {
+  width: 90px; /* Button */
+}
+.multi-news-nav-icon-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.multi-news-nav-text {
+  opacity: 0;
+  max-width: 0;
+  margin-left: 0;
+  white-space: nowrap;
+  color: #222;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  transition: opacity 0.3s cubic-bezier(0.4,0,0.2,1), max-width 0.3s cubic-bezier(0.4,0,0.2,1), margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+  display: inline-block;
+}
+.multi-news-nav-btn:hover .multi-news-nav-text,
+.multi-news-nav-btn:focus .multi-news-nav-text {
+  opacity: 1;
+  max-width: fit-content;
+  margin-left: 4px;
+}
+
+/*
+
+
+#Categories card
+
+
+*/
+.categories-card {
+  display: flex;
+  padding: 3px;
+  align-items: center;
+  gap: 10px;
+  background: #FFF;
+  margin-top: 8px;
+}
+
+.categories-card-content {
+  position: relative;
+  border-radius: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  height: 100%;
+}
+
+.category-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;    /* Aligns content to the left */
+  justify-content: flex-start; /* Aligns content to the top */
+  background: #FFF;           /* White background */
+  border-radius: 14px;
+  border: 1px solid #F0F0F0;  /* Light border */
+  padding: 16px;              /* You can adjust this value for more/less space */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: 208px;
+  box-sizing: border-box;     /* Ensures padding is included in height/width */
+  position: relative;
+  overflow: hidden;
+}
+.category-svg-bg {
+  position: absolute;
+  bottom: -30px;
+  right: -50px;
+  width: 149px;
+  height: 153px;
+  pointer-events: none;
+  z-index: 0;
+  transition: bottom 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+.category-item:hover .category-svg-bg {
+  bottom: -40px;
+}
+
+.category-item:hover {
+  background: #F8F9FA;
+}
+
+.category-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #F3F4F6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.category-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  color: #6B7280;
+  font-weight: 500;
+  text-align: center;
+}
+
+.category-title {
+  color: #2C2C2C;
+  font-family: 'Inter', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.category-subtitle {
+  color: #BABABA;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  margin-bottom: 4px;
+  opacity: 0.9;
+}
+.category-item-container {
+  padding: 3px;
+  border-radius: 16px;
+  background: #FFF;
+  border: 1px solid #F0F0F0; /* Light border around the container */
+}
+</style>
+</head>
+<body>
+  <div class="container">
+    <nav class="navigation" id="navigationContainer">
+      <div class="navigation-row">
+        <div class="nav-home">
+          <!-- Home Icon -->
+          <svg class="nav-svg" viewBox="0 0 14 14" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 5.82653V11.375C2 11.9523 2.44772 12.375 3 12.375H11C11.5523 12.375 12 11.9523 12 11.375V5.82653C12 5.48247 11.8363 5.16385 11.6079 4.98312L7.52337 1.63552C7.37277 1.5156 7.18751 1.45833 7 1.45833C6.81249 1.45833 6.62723 1.5156 6.47663 1.63552L2.39209 4.98312C2.1637 5.16385 2 5.48247 2 5.82653Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M8.75 10.0833C8.27111 10.4797 7.66277 10.75 7 10.75C6.33723 10.75 5.72889 10.4797 5.25 10.0833" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="nav-icons-group">
+          <div class="nav-user" id="navUserIcon">
+            <!-- User Icon -->
+            <svg class="nav-svg" viewBox="0 0 14 14" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 5C10 3.48071 8.51929 2 7 2C5.48071 2 4 3.48071 4 5C4 6.51929 5.48071 8 7 8C8.51929 8 10 6.51929 10 5Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11 12C11 9.65299 9.34701 8 7 8C4.65299 8 3 9.65299 3 12" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="nav-search" id="navSearchIcon">
+            <!-- Search Icon -->
+            <svg class="nav-svg" viewBox="0 0 14 14" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.5 10.5L13 13" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 7C12 4.23858 9.76142 2 7 2C4.23858 2 2 4.23858 2 7C2 9.76142 4.23858 12 7 12C9.76142 12 12 9.76142 12 7Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="nav-bell">
+            <!-- Bell Icon -->
+            <svg class="nav-svg" viewBox="0 0 14 14" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M11.0833 10.5V5.54165C11.0833 3.28649 9.25513 1.45831 6.99996 1.45831C4.7448 1.45831 2.91663 3.28649 2.91663 5.54165V10.5" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M11.9583 10.5H2.04163" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7.875 11.6667C7.875 12.1499 7.48323 12.5417 7 12.5417M7 12.5417C6.51677 12.5417 6.125 12.1499 6.125 11.6667M7 12.5417V11.6667" stroke="black" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="nav-menu">
+            <!-- Menu Icon -->
+            <svg class="nav-svg" viewBox="0 0 14 14" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M3 5.25H11" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M3 8.75H11" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="first-row">
+         <!--
+
+         Content for first row 
+
+          -->
+        <div class="first-row-left">
+          <div class="first-row-input-container">
+            <div class="first-row-input-icon-container">
+              <div class="first-row-pill-icon">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.75 7.25C9.40685 7.25 10.75 5.90685 10.75 4.25C10.75 2.59315 9.40685 1.25 7.75 1.25C6.09315 1.25 4.75 2.59315 4.75 4.25C4.75 4.69021 4.84481 5.10825 5.01515 5.48485L1.54289 8.9571C1.35535 9.14465 1.25 9.399 1.25 9.6642V10.75H2.75V9.75H3.75V8.75H4.75L6.51515 6.98485C6.89175 7.1552 7.3098 7.25 7.75 7.25Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8.75 3.25L8.25 3.75" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <input class="first-row-input" type="text" placeholder="Type here..." />
+            <button class="first-row-left-btn">Login</button>
+          </div>
+        </div>
+        <div class="first-row-right">
+          <button class="google-login-btn">
+            <span class="google-icon-circle">
+              <!-- Google G SVG -->
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+                <g>
+                  <path d="M19.6 10.23C19.6 9.55 19.54 8.92 19.45 8.3H10V12.04H15.42C15.18 13.26 14.44 14.29 13.36 14.97V17.22H16.36C18.18 15.55 19.6 13.13 19.6 10.23Z" fill="#4285F4"/>
+                  <path d="M10 20C12.43 20 14.47 19.19 16.04 17.78L13.36 14.97C12.51 15.55 11.39 15.92 10 15.92C7.67 15.92 5.7 14.3 4.97 12.22H1.86V14.53C3.42 17.13 6.48 20 10 20Z" fill="#34A853"/>
+                  <path d="M4.97 12.22C4.78 11.64 4.67 11.03 4.67 10.38C4.67 9.73 4.78 9.12 4.97 8.54V6.23H1.86C1.31 7.36 1 8.63 1 10C1 11.37 1.31 12.64 1.86 13.77L4.97 12.22Z" fill="#FBBC05"/>
+                  <path d="M10 4.08C11.23 4.08 12.33 4.5 13.18 5.31L16.1 2.39C14.47 0.86 12.43 0 10 0C6.48 0 3.42 2.87 1.86 5.47L4.97 8.54C5.7 6.46 7.67 4.08 10 4.08Z" fill="#EA4335"/>
+                </g>
+              </svg>
+            </span>
+            <span class="google-login-text">Login with google</span>
+          </button>
+        </div>
+      </div>
+      <div class="second-row">
+        <div class="second-row-left">
+          <div class="second-row-left-input-container">
+            <div class="second-row-left-input-icon-container">
+              <div class="second-row-left-pill-icon">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M8.5 8.5L10.5 10.5" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M9.5 5.5C9.5 3.29086 7.70915 1.5 5.5 1.5C3.29086 1.5 1.5 3.29086 1.5 5.5C1.5 7.70915 3.29086 9.5 5.5 9.5C7.70915 9.5 9.5 7.70915 9.5 5.5Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <input class="second-row-left-input" type="text" placeholder="Type here..." />
+          </div>
+        </div>
+        <div class="second-row-right">
+          <div class="second-row-right-input-container">
+            <div class="second-row-right-input-icon-container">
+              <div class="second-row-right-pill-icon">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1.5 2.25H8.25C8.6642 2.25 9 2.58579 9 3V3.99999C9 4.4142 8.6642 4.74999 8.25 4.74999H1.5" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M1.5 4.75H9.75C10.1642 4.75 10.5 5.0858 10.5 5.5V6.5C10.5 6.9142 10.1642 7.25 9.75 7.25H6.5M1.5 7.25H4" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M1.5 7.25H4M1.5 9.75H8.25C8.6642 9.75 9 9.4142 9 9V8C9 7.5858 8.6642 7.25 8.25 7.25H6.5" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M4 4.75V8.25L5.25 7.25L6.5 8.25V4.75" stroke="black" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <input class="second-row-right-input" type="text" placeholder="Type here..." />
+          </div>
+        </div>
+      </div>
+      <div class="third-row">
+         <!--
+
+         Content for third row 
+
+          -->
+        <div class="third-row-left">
+          <div class="third-row-input-container">
+            <div class="third-row-left-group">
+              <div class="third-row-input-icon-container">
+                <div class="third-row-pill-icon">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8.16667 10.5001C10.744 10.5001 12.8333 8.41076 12.8333 5.83341C12.8333 3.25609 10.744 1.16675 8.16667 1.16675C5.58934 1.16675 3.5 3.25609 3.5 5.83341C3.5 8.41076 5.58934 10.5001 8.16667 10.5001Z" stroke="white" stroke-linejoin="round"/>
+                    <path d="M7.68065 12.2319C7.03671 12.614 6.28491 12.8334 5.48183 12.8334C3.09861 12.8334 1.16663 10.9014 1.16663 8.51815C1.16663 7.71508 1.386 6.96328 1.76808 6.31934" stroke="white" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+              </div>
+              <div class="third-row-input">Your volts:</div>
+              <div class="third-row-volts-container">
+                <span class="third-row-volts-text">143/500</span>
+              </div>
+            </div>
+            <button class="third-row-left-btn">Get Volts</button>
+          </div>
+        </div>
+        <div class="third-row-right">
+          <button class="logout-btn">
+            <span class="logout-icon-circle">
+              <!-- Logout SVG -->
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8.16667 10.7917L7.95783 11.4182C7.75192 12.036 7.08021 12.3655 6.46561 12.1505L2.92189 10.9101C2.21999 10.6645 1.75 10.0021 1.75 9.25843V4.74158C1.75 3.99793 2.21999 3.3355 2.92189 3.08983L6.46561 1.84953C7.08021 1.63442 7.75192 1.96403 7.95783 2.58177L8.16667 3.20833" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10.7917 5.54175L12.25 7.00008L10.7917 8.45841M5.83337 7.00008H11.8949" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </span>
+            <span class="logout-text">Logout</span>
+          </button>
+        </div>
+      </div>
+    </nav>
+    
+    <!-- News Card Container -->
+    <div class="news-card" id="newsCard">
+      <div class="news-card-content" id="newsCardContent">
+        <!-- Top Left Content -->
+        <div class="news-card-top-left">
+          <div class="news-card-subtitle">New Widgets</div>
+          <div class="news-card-title">Navigation</div>
+        </div>
+        
+        <!-- Bottom Left Button -->
+        <div class="news-card-bottom-left">
+          <button class="news-card-button">View Components</button>
+        </div>
+        
+        <!-- Bottom Right Navigation Bar -->
+        <div class="news-card-bottom-right">
+          <div class="multi-news-nav-group">
+            <button class="multi-news-nav-btn">
+              <span class="multi-news-nav-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M4.5 3.5L6 1L7.5 3.5L6 3L4.5 3.5Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M4.5 8.5L6 11L7.5 8.5L6 9L4.5 8.5Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M1 6L3.5 4.5L3 6L3.5 7.5L1 6Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M11 6L8.5 4.5L9 6L8.5 7.5L11 6Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M7.0002 6.00427C7.0002 6.55702 6.55245 7.00512 6.0001 7.00512C5.44775 7.00512 5 6.55702 5 6.00427C5 5.45152 5.44775 5.00342 6.0001 5.00342C6.55245 5.00342 7.0002 5.45152 7.0002 6.00427Z" stroke="black"/>
+                </svg>
+              </span>
+              <span class="multi-news-nav-text">Nav</span>
+            </button>
+            <button class="multi-news-nav-btn">
+              <span class="multi-news-nav-icon-circle">
+                <svg width="14" height="14" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2.75 10.75H9.25C10.0785 10.75 10.75 10.0785 10.75 9.25V2.75C10.75 1.92158 10.0785 1.25 9.25 1.25H2.75C1.92158 1.25 1.25 1.92158 1.25 2.75V9.25C1.25 10.0785 1.92158 10.75 2.75 10.75Z" stroke="black" stroke-linejoin="round"/>
+                  <path d="M10.75 4.25H1.25" stroke="black"/>
+                  <path d="M10.75 7.75H1.25" stroke="black"/>
+                </svg>
+              </span>
+              <span class="multi-news-nav-text">Card</span>
+            </button>
+            <button class="multi-news-nav-btn">
+              <span class="multi-news-nav-icon-circle">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.75 7.25C9.40685 7.25 10.75 5.90685 10.75 4.25C10.75 2.59315 9.40685 1.25 7.75 1.25C6.09315 1.25 4.75 2.59315 4.75 4.25C4.75 4.69021 4.84481 5.10825 5.01515 5.48485L1.54289 8.9571C1.35535 9.14465 1.25 9.399 1.25 9.6642V10.75H2.75V9.75H3.75V8.75H4.75L6.51515 6.98485C6.89175 7.1552 7.3098 7.25 7.75 7.25Z" stroke="black" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M8.75 3.25L8.25 3.75" stroke="black" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+              <span class="multi-news-nav-text">Button</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Categories Card Container -->
+    <div class="categories-card">
+      <div class="categories-card-content">
+        <div class="category-item-container">
+          <div class="category-item">
+            <div class="news-card-title category-subtitle">New Widgets</div>
+            <div class="news-card-title category-title">Navigation</div>
+            <svg class="category-svg-bg" viewBox="0 0 149 153" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" fill="white"/>
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" fill="#F9F9F9"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="12" y="12" width="125" height="19.2" rx="8" fill="white"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 56.8003H22.9982L25.0919 50.9821H26.1061L28.1999 56.8003H27.268L25.6232 52.0389H25.5777L23.93 56.8003ZM24.0862 54.5219H27.109V55.2605H24.0862V54.5219Z" fill="black"/>
+              <rect x="44.8" y="44.2002" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+              <rect x="8" y="72.3999" width="133" height="35.6" rx="9.6" fill="#FF5C0A"/>
+              <rect x="14.9" y="79.3003" width="21.4" height="21.8" rx="9.1" stroke="#FFAF87"/>
+              <path d="M23.93 93.2002H22.9982L25.0919 87.382H26.1061L28.1999 93.2002H27.268L25.6232 88.4388H25.5777L23.93 93.2002ZM24.0862 90.9218H27.109V91.6604H24.0862V90.9218Z" fill="white"/>
+              <rect x="44.8" y="80.6001" width="89.8" height="19.2" rx="9.6" fill="#FF7E3E"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 129.6H22.9982L25.0919 123.782H26.1061L28.1999 129.6H27.268L25.6232 124.839H25.5777L23.93 129.6ZM24.0862 127.322H27.109V128.06H24.0862V127.322Z" fill="black"/>
+              <rect x="44.8" y="117" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+            </svg>
+          </div>
+        </div>
+        <div class="category-item-container">
+          <div class="category-item">
+            <div class="news-card-title category-subtitle">New Widgets</div>
+            <div class="news-card-title category-title">Navigation</div>
+            <svg class="category-svg-bg" viewBox="0 0 149 153" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" fill="white"/>
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" fill="#F9F9F9"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="12" y="12" width="125" height="19.2" rx="8" fill="white"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 56.8003H22.9982L25.0919 50.9821H26.1061L28.1999 56.8003H27.268L25.6232 52.0389H25.5777L23.93 56.8003ZM24.0862 54.5219H27.109V55.2605H24.0862V54.5219Z" fill="black"/>
+              <rect x="44.8" y="44.2002" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+              <rect x="8" y="72.3999" width="133" height="35.6" rx="9.6" fill="#FF5C0A"/>
+              <rect x="14.9" y="79.3003" width="21.4" height="21.8" rx="9.1" stroke="#FFAF87"/>
+              <path d="M23.93 93.2002H22.9982L25.0919 87.382H26.1061L28.1999 93.2002H27.268L25.6232 88.4388H25.5777L23.93 93.2002ZM24.0862 90.9218H27.109V91.6604H24.0862V90.9218Z" fill="white"/>
+              <rect x="44.8" y="80.6001" width="89.8" height="19.2" rx="9.6" fill="#FF7E3E"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 129.6H22.9982L25.0919 123.782H26.1061L28.1999 129.6H27.268L25.6232 124.839H25.5777L23.93 129.6ZM24.0862 127.322H27.109V128.06H24.0862V127.322Z" fill="black"/>
+              <rect x="44.8" y="117" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+            </svg>
+          </div>
+        </div>
+        <div class="category-item-container">
+          <div class="category-item">
+            <div class="news-card-title category-subtitle">New Widgets</div>
+            <div class="news-card-title category-title">Navigation</div>
+            <svg class="category-svg-bg" viewBox="0 0 149 153" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" fill="white"/>
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" fill="#F9F9F9"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="12" y="12" width="125" height="19.2" rx="8" fill="white"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 56.8003H22.9982L25.0919 50.9821H26.1061L28.1999 56.8003H27.268L25.6232 52.0389H25.5777L23.93 56.8003ZM24.0862 54.5219H27.109V55.2605H24.0862V54.5219Z" fill="black"/>
+              <rect x="44.8" y="44.2002" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+              <rect x="8" y="72.3999" width="133" height="35.6" rx="9.6" fill="#FF5C0A"/>
+              <rect x="14.9" y="79.3003" width="21.4" height="21.8" rx="9.1" stroke="#FFAF87"/>
+              <path d="M23.93 93.2002H22.9982L25.0919 87.382H26.1061L28.1999 93.2002H27.268L25.6232 88.4388H25.5777L23.93 93.2002ZM24.0862 90.9218H27.109V91.6604H24.0862V90.9218Z" fill="white"/>
+              <rect x="44.8" y="80.6001" width="89.8" height="19.2" rx="9.6" fill="#FF7E3E"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 129.6H22.9982L25.0919 123.782H26.1061L28.1999 129.6H27.268L25.6232 124.839H25.5777L23.93 129.6ZM24.0862 127.322H27.109V128.06H24.0862V127.322Z" fill="black"/>
+              <rect x="44.8" y="117" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+            </svg>
+          </div>
+        </div>
+        <div class="category-item-container">
+          <div class="category-item">
+            <div class="news-card-title category-subtitle">New Widgets</div>
+            <div class="news-card-title category-title">Navigation</div>
+            <svg class="category-svg-bg" viewBox="0 0 149 153" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" fill="white"/>
+              <rect x="0.5" y="0.5" width="148" height="151.4" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" fill="#F9F9F9"/>
+              <rect x="8.5" y="8.5" width="132" height="26.2" rx="9.1" stroke="#D1D1D1"/>
+              <rect x="12" y="12" width="125" height="19.2" rx="8" fill="white"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="42.9004" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 56.8003H22.9982L25.0919 50.9821H26.1061L28.1999 56.8003H27.268L25.6232 52.0389H25.5777L23.93 56.8003ZM24.0862 54.5219H27.109V55.2605H24.0862V54.5219Z" fill="black"/>
+              <rect x="44.8" y="44.2002" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+              <rect x="8" y="72.3999" width="133" height="35.6" rx="9.6" fill="#FF5C0A"/>
+              <rect x="14.9" y="79.3003" width="21.4" height="21.8" rx="9.1" stroke="#FFAF87"/>
+              <path d="M23.93 93.2002H22.9982L25.0919 87.382H26.1061L28.1999 93.2002H27.268L25.6232 88.4388H25.5777L23.93 93.2002ZM24.0862 90.9218H27.109V91.6604H24.0862V90.9218Z" fill="white"/>
+              <rect x="44.8" y="80.6001" width="89.8" height="19.2" rx="9.6" fill="#FF7E3E"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" fill="#F9F9F9"/>
+              <rect x="14.9" y="115.7" width="21.4" height="21.8" rx="9.1" stroke="#D1D1D1"/>
+              <path d="M23.93 129.6H22.9982L25.0919 123.782H26.1061L28.1999 129.6H27.268L25.6232 124.839H25.5777L23.93 129.6ZM24.0862 127.322H27.109V128.06H24.0862V127.322Z" fill="black"/>
+              <rect x="44.8" y="117" width="89.8" height="19.2" rx="9.6" fill="#F9F9F9"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SVGs for reference -->
+  </div>
+  <script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Restore navigation logic
+  const navUserIcon = document.getElementById('navUserIcon');
+  const navSearchIcon = document.getElementById('navSearchIcon');
+  const firstRow = document.querySelector('.first-row');
+  const secondRow = document.querySelector('.second-row');
+  const thirdRow = document.querySelector('.third-row');
+
+  let isLoggedIn = false;
+
+  if (navUserIcon) {
+    navUserIcon.addEventListener('click', function() {
+      if (isLoggedIn) {
+        // Show third row if logged in
+        const willShow = !thirdRow.classList.contains('active');
+        thirdRow.classList.toggle('active', willShow);
+        firstRow.classList.remove('active');
+        secondRow.classList.remove('active');
+      } else {
+        // Show first row if not logged in
+        const willShow = !firstRow.classList.contains('active');
+        firstRow.classList.toggle('active', willShow);
+        secondRow.classList.remove('active');
+        thirdRow.classList.remove('active');
+      }
+    });
+  }
+
+  if (navSearchIcon) {
+    navSearchIcon.addEventListener('click', function() {
+      const willShow = !secondRow.classList.contains('active');
+      secondRow.classList.toggle('active', willShow);
+      firstRow.classList.remove('active');
+      thirdRow.classList.remove('active');
+    });
+  }
+
+  // Login logic
+  const loginBtn = document.querySelector('.first-row-left-btn');
+  const loginInput = document.querySelector('.first-row-input');
+  
+  if (loginBtn && loginInput) {
+    loginBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const key = loginInput.value.trim();
+      if (key === '14312412') {
+        isLoggedIn = true;
+        firstRow.classList.remove('active');
+        thirdRow.classList.add('active');
+      }
+    });
+  }
+
+  // Logout button
+  const logoutBtn = document.querySelector('.logout-btn');
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      isLoggedIn = false;
+      thirdRow.classList.remove('active');
+      firstRow.classList.add('active');
+    });
+  }
+
+  // Set the news card background image
+  const newsCardContent = document.querySelector('.news-card-content');
+  if (newsCardContent) {
+    newsCardContent.style.background = 'none';
+    newsCardContent.style.backgroundImage = "url('https://firebasestorage.googleapis.com/v0/b/test-c3900.firebasestorage.app/o/images%2Fpromo.webp?alt=media&token=0adcc02d-77df-410d-9ffc-1b0471dd3809')";
+    newsCardContent.style.backgroundSize = 'cover';
+    newsCardContent.style.backgroundPosition = 'center';
+    newsCardContent.style.backgroundRepeat = 'no-repeat';
+  }
+});
+</script>
+</body>
+</html> 

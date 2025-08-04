@@ -1,0 +1,91 @@
+
+.user__section
+
+display: flex;
+align-items: flex-start;
+gap: 4px;
+align-self: stretch;
+
+>.user__section--left
+
+display: flex;
+align-items: flex-start;
+gap: 4px;
+flex: 1 0 0;
+
+>>.user__section--left-container
+
+display: flex;
+padding: 4px;
+justify-content: space-between;
+align-items: center;
+flex: 1 0 0;
+border-radius: 14px;
+border: 0.5px solid #F0F0F0;
+background: #FFF;
+
+>>>.user__input-container
+
+display: flex;
+align-items: center;
+gap: 8px;
+flex: 1 0 0;
+
+>>>>.user__icon-box
+
+display: flex;
+padding: 8px;
+align-items: center;
+gap: 10px;
+border-radius: 12px;
+border: 0.5px solid #F0F0F0;
+background: #FFF;
+
+>>>>.user__input
+
+display: flex;
+padding: 4px 0;
+align-items: center;
+gap: 10px;
+flex: 1 0 0;
+
+>>>.user__input-button
+
+display: flex;
+padding: 8px;
+align-items: center;
+gap: 10px;
+border-radius: 12px;
+background: #FF5C0A;
+
+>.user__section--right
+
+display: flex;
+justify-content: center;
+align-items: center;
+gap: 4px;
+align-self: stretch;
+
+>>.user__section--right-container
+
+display: flex;
+padding: 4px;
+justify-content: center;
+align-items: center;
+gap: 8px;
+align-self: stretch;
+border-radius: 14px;
+border: 0.5px solid #F0F0F0;
+background: #FFF;
+
+>>>.user__input-g-button
+
+display: flex;
+padding: 8px;
+justify-content: center;
+align-items: center;
+gap: 10px;
+border-radius: 12px;
+border: 0.5px solid #F0F0F0;
+background: #FFF;
+

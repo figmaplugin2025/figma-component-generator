@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": ".",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "module": "esnext",
+    "target": "es2017",
+    "lib": ["es2017", "dom"],
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "types": ["@figma/plugin-typings"]
+  },
+  "include": ["code.ts", "src/**/*"]
+}

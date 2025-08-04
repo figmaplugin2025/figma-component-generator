@@ -1,0 +1,30 @@
+{
+  "name": "My React Plugin",
+  "id": "my-react-plugin",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "dist/ui.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "editorType": [
+    "figma"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://www.gstatic.com",
+      "https://firestore.googleapis.com",
+      "https://identitytoolkit.googleapis.com",
+      "https://securetoken.googleapis.com",
+      "https://firebasestorage.googleapis.com",
+      "https://figma-plugin-auth.firebaseapp.com",
+      "https://figma-plugin-auth.web.app",
+      "https://figma-plugin-auth-default-rtdb.firebaseio.com",
+      "https://picsum.photos",
+      "https://fastly.picsum.photos",
+      "https://test-c3900.firebasestorage.app",
+      "https://api.figma.com",
+      "https://figma-alpha-api.s3.us-west-2.amazonaws.com"
+    ]
+  }
+}
