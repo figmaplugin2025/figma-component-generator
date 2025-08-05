@@ -174,6 +174,15 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
       <CustomModuleModal 
         isVisible={showCustomModuleModal}
         onClose={() => setShowCustomModuleModal(false)}
+        onApplyChanges={(changes) => {
+          console.log('✅ Customization changes applied:', changes);
+          // Here you can handle the customization changes
+          // For example, update the component with new properties
+          // or trigger a regeneration with the new settings
+          
+          // You could also show a success notification
+          alert(`Component customized with: ${JSON.stringify(changes, null, 2)}`);
+        }}
       />
     </div>
   );

@@ -200,7 +200,7 @@ function createVariantPlaceholder(title: string, variantKey: string, specs: any)
   return frame;
 }
 
-// Function to create individual detached variants
+// UPDATED: Function to create individual detached variants using the proper workflow
 // Global flag to prevent multiple executions
 let isGenerating = false;
 
@@ -242,35 +242,47 @@ async function createDetachedVariants(masterComponent: any, variants: any[]) {
     let currentX = 0;
     const spacing = 50; // Space between variants
     
-    // Step 1: Import and position all variants as individual detached components
+    // NEW WORKFLOW: Import published components directly and detach them immediately
     for (let i = 0; i < variants.length; i++) {
       const variant = variants[i];
-      console.log(`🔄 Importing detached variant ${i + 1}/${variants.length}:`, variant.figmaComponentKey);
+      console.log(`🔄 Processing variant ${i + 1}/${variants.length}:`, variant.figmaComponentKey);
       
       try {
-        const component = await figma.importComponentByKeyAsync(variant.figmaComponentKey);
+        // Step 1: Import the published component directly
+        console.log(`📥 Importing published component: ${variant.figmaComponentKey}`);
+        const publishedComponent = await figma.importComponentByKeyAsync(variant.figmaComponentKey);
+        console.log(`✅ Published component imported: ${publishedComponent.name}`);
         
-        // Create an instance of the component
-        const instance = component.createInstance();
+        // Step 2: Create an instance from the published component
+        const instance = publishedComponent.createInstance();
+        console.log(`✅ Instance created from published component`);
         
-        // Set the name from the database (the specific variant name)
-        instance.name = variant.name;
+        // Step 3: IMMEDIATELY detach the instance to convert it to a regular frame
+        // This preserves ALL original properties automatically
+        console.log(`🔧 Detaching instance to convert to regular frame...`);
+        const detachedFrame = instance.detachInstance();
+        console.log(`✅ Instance detached successfully! Frame name: ${detachedFrame.name}`);
         
-        // Position the instance horizontally (side by side)
-        instance.x = currentX;
-        instance.y = 0;
+        // Step 4: Set the proper name from the database
+        detachedFrame.name = variant.name;
         
-        // Add a property to mark this as a generated component
-        instance.setPluginData('generated', 'true');
+        // Step 5: Position the detached frame
+        detachedFrame.x = currentX;
+        detachedFrame.y = 0;
         
-        // Add the instance to our list (it will be detached later)
-        insertedVariants.push(instance);
-        currentX += instance.width + spacing;
+        // Step 6: Mark as generated
+        detachedFrame.setPluginData('generated', 'true');
         
-        console.log(`✅ Instance ${i + 1} created:`, variant.name);
+        // Step 7: Add to our list
+        insertedVariants.push(detachedFrame);
+        currentX += detachedFrame.width + spacing;
+        
+        console.log(`✅ Detached frame ${i + 1} created: ${variant.name}`);
+        console.log(`📏 Frame dimensions: ${detachedFrame.width}x${detachedFrame.height}`);
+        console.log(`🎨 Frame children count: ${detachedFrame.children?.length || 0}`);
         
       } catch (variantError) {
-        console.error(`❌ Failed to import detached variant ${i + 1}:`, variantError);
+        console.error(`❌ Failed to process variant ${i + 1}:`, variantError);
         
         // Create placeholder for failed variant
         const placeholder = createVariantPlaceholder(masterComponent.title, variant.figmaComponentKey, variant.specs);
@@ -282,60 +294,28 @@ async function createDetachedVariants(masterComponent: any, variants: any[]) {
       }
     }
     
-    // Step 2: Detach all instances to make them independent
-    console.log(`🔧 Detaching ${insertedVariants.length} instances...`);
-    for (let i = 0; i < insertedVariants.length; i++) {
-      const instance = insertedVariants[i];
-      if (instance.type === 'INSTANCE') {
-        try {
-          // Create a regular frame (like yesterday) - not a component with instance inside
-          const frame = figma.createFrame();
-          frame.name = instance.name;
-          frame.resize(instance.width, instance.height);
-          frame.x = instance.x;
-          frame.y = instance.y;
-          
-          // Copy all children from the instance to the frame (no instances, just regular content)
-          for (const child of instance.children) {
-            const clonedChild = child.clone();
-            frame.appendChild(clonedChild);
-          }
-          
-          // Remove the original instance
-          instance.remove();
-          
-          // Replace with the regular frame
-          insertedVariants[i] = frame;
-          console.log(`✅ Created regular frame ${i + 1}: ${frame.name}`);
-        } catch (error) {
-          console.error(`❌ Failed to create frame ${i + 1}:`, error);
-          // If frame creation fails, keep the instance as is
-          console.log(`⚠️ Keeping instance ${i + 1} as is: ${instance.name}`);
-        }
-      }
-    }
-    
-    // Step 3: Auto-select all detached variants
+    // Step 8: Auto-select all detached variants
     if (insertedVariants.length > 0) {
       figma.currentPage.selection = insertedVariants;
       console.log(`✅ Auto-selected ${insertedVariants.length} detached variants`);
       
-      // Step 3: Send success message with original component names
+      // Step 9: Send success message with original component names
       const variantNames = insertedVariants.map(node => node.name);
       figma.ui.postMessage({
         type: 'detached-variants-created',
         success: true,
         variantCount: insertedVariants.length,
-        variantNames: variantNames
+        variantNames: variantNames,
+        message: `✅ Successfully created ${insertedVariants.length} detached frames with preserved properties!`
       });
       
-      // Step 4: Center the viewport on the variants
+      // Step 10: Center the viewport on the variants
       const totalWidth = currentX - spacing;
       const centerX = totalWidth / 2;
       figma.viewport.center = { x: centerX, y: 200 };
       
     } else {
-      throw new Error('No detached variants were successfully imported');
+      throw new Error('No detached variants were successfully created');
     }
     
   } catch (error) {

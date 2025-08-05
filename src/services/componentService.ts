@@ -355,6 +355,27 @@ class ComponentService {
       throw error;
     }
   }
+
+  /**
+   * Clear all components from the database
+   */
+  async clearAllComponents(): Promise<void> {
+    try {
+      const allComponents = await this.getAllComponents();
+      
+      // Delete each component
+      for (const component of allComponents) {
+        if (component.id) {
+          await this.deleteComponent(component.id);
+        }
+      }
+      
+      console.log(`✅ Cleared ${allComponents.length} components`);
+    } catch (error) {
+      console.error('❌ Error clearing components:', error);
+      throw error;
+    }
+  }
 }
 
 export const componentService = new ComponentService(); 

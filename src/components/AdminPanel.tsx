@@ -43,7 +43,7 @@ const AdminPanel: React.FC = () => {
       const allComponentSets = await allComponentSetsResponse.json();
 
       console.log('🔍 Found all components:', allComponents.meta?.components || []);
-            console.log('🔍 Found all component sets:', allComponentSets.meta?.component_sets || []);
+      console.log('🔍 Found all component sets:', allComponentSets.meta?.component_sets || []);
 
       // Step 2: Expand component sets to get their individual variants
       const expandedItems = [...(allComponents.meta?.components || [])];
@@ -99,7 +99,7 @@ const AdminPanel: React.FC = () => {
         }
       }
       
-            console.log('🔍 All expanded items:', expandedItems);
+      console.log('🔍 All expanded items:', expandedItems);
       console.log('🔍 Expanded items type:', typeof expandedItems);
       console.log('🔍 Expanded items length:', expandedItems.length);
       
@@ -111,10 +111,10 @@ const AdminPanel: React.FC = () => {
       const masterComponents = groupComponentsByMaster(expandedItems);
       console.log('📋 Master components:', masterComponents);
 
-          let successCount = 0;
-          let failCount = 0;
+      let successCount = 0;
+      let failCount = 0;
 
-                    // Step 3: Import each master component
+      // Step 3: Import each master component
       console.log('🔍 Master components object:', masterComponents);
       
       for (const [masterName, variants] of Object.entries(masterComponents)) {
@@ -214,190 +214,6 @@ const AdminPanel: React.FC = () => {
 
     } catch (error) {
       setImportStatus(`❌ Import failed: ${error}`);
-      setTimeout(() => setImportStatus(''), 5000);
-    } finally {
-      setImporting(false);
-    }
-      };
-
-  const handleLargeScaleImport = async () => {
-    if (!figmaFileId || !figmaAccessToken) {
-      alert('Please enter both Figma File ID and Access Token');
-      return;
-    }
-
-    setImporting(true);
-    setImportStatus('🔄 Starting large-scale import...');
-
-    try {
-      // Step 1: Get ALL components and component sets
-      console.log('🔍 Fetching all components for large-scale import...');
-      const [allComponentsResponse, allComponentSetsResponse] = await Promise.all([
-        fetch(`https://api.figma.com/v1/files/${figmaFileId}/components`, {
-          headers: { 'X-Figma-Token': figmaAccessToken }
-        }),
-        fetch(`https://api.figma.com/v1/files/${figmaFileId}/component_sets`, {
-          headers: { 'X-Figma-Token': figmaAccessToken }
-        })
-      ]);
-
-      if (!allComponentsResponse.ok || !allComponentSetsResponse.ok) {
-        throw new Error('Failed to fetch components or component sets');
-      }
-
-      const allComponents = await allComponentsResponse.json();
-      const allComponentSets = await allComponentSetsResponse.json();
-
-      console.log(`🔍 Found ${allComponents.meta?.components?.length || 0} components`);
-      console.log(`🔍 Found ${allComponentSets.meta?.component_sets?.length || 0} component sets`);
-
-      // Step 2: Process and group all components
-      const expandedItems = [...(allComponents.meta?.components || [])];
-      const componentSets = allComponentSets.meta?.component_sets || [];
-      
-      // Process component sets to get individual variants
-      for (const componentSet of componentSets) {
-        try {
-          console.log(`🔍 Expanding component set: ${componentSet.name}`);
-          
-          const setDetailsResponse = await fetch(`https://api.figma.com/v1/files/${figmaFileId}/component_sets?ids=${componentSet.key}`, {
-            headers: { 'X-Figma-Token': figmaAccessToken }
-          });
-          
-          if (setDetailsResponse.ok) {
-            const setDetails = await setDetailsResponse.json();
-            if (setDetails.meta && setDetails.meta.component_sets && setDetails.meta.component_sets[componentSet.key]) {
-              const setInfo = setDetails.meta.component_sets[componentSet.key];
-              
-              if (setInfo.children) {
-                for (const child of setInfo.children) {
-                  if (child.type === 'COMPONENT') {
-                    expandedItems.push({
-                      ...child,
-                      name: `${componentSet.name}/${child.name}`,
-                      key: child.key,
-                      node_id: child.id,
-                      isVariant: true,
-                      masterComponentName: componentSet.name
-                    });
-                  }
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error(`❌ Failed to expand component set ${componentSet.name}:`, error);
-        }
-      }
-
-      // Step 3: Group by master components
-      const masterComponents = groupComponentsByMaster(expandedItems);
-      console.log(`📋 Grouped into ${Object.keys(masterComponents).length} master components`);
-
-      // Step 4: Import with progress tracking
-      let successCount = 0;
-      let failCount = 0;
-      const totalMasters = Object.keys(masterComponents).length;
-
-      for (const [masterName, variants] of Object.entries(masterComponents)) {
-        try {
-          setImportStatus(`🔄 Processing ${masterName} (${successCount + 1}/${totalMasters})...`);
-          
-          if (!Array.isArray(variants) || variants.length === 0) {
-            console.warn(`⚠️ No variants found for ${masterName}, skipping`);
-            continue;
-          }
-
-          // Use the first variant's data as the master component data
-          const firstVariant = variants[0] as any;
-          
-          // Create variant data for the master component
-          const variantData = variants.map((variant: any, index: number) => ({
-            id: `variant-${index}`,
-            name: extractVariantName(variant.name),
-            imageUrl: '',
-            figmaComponentKey: variant.key || variant.node_id || '',
-            specs: {
-              size: `${Math.round(variant.absoluteBoundingBox?.width || 400)}x${Math.round(variant.absoluteBoundingBox?.height || 240)}px`,
-              device: 'Desktop',
-              color: variant.name.includes('dark') ? 'Dark' : 'Light',
-              padding: '16px'
-            },
-            isDefault: index === 0
-          }));
-
-          // Create component data from the master component
-          const componentData = {
-            title: masterName,
-            description: firstVariant.description || `${masterName} master component`,
-            volts: calculateVolts(firstVariant),
-            maxVolts: 500,
-            voltsCost: calculateVolts(firstVariant),
-            category: categorizeComponent(masterName),
-            specs: {
-              size: `${Math.round(firstVariant.absoluteBoundingBox?.width || 400)}x${Math.round(firstVariant.absoluteBoundingBox?.height || 240)}px`,
-              device: 'Desktop',
-              color: 'Light',
-              padding: '16px'
-            },
-            imageUrl: '',
-            figmaComponentId: firstVariant.node_id || firstVariant.key,
-            figmaFileId: figmaFileId,
-            figmaComponentKey: firstVariant.key || 'fallback-key',
-            generateCount: 0,
-            downloads: 0,
-            rating: 5.0,
-            tags: generateTags(masterName),
-            isPublic: true,
-            createdBy: 'admin',
-            variantCount: variants.length,
-            isMasterComponent: true,
-            variants: variantData,
-            masterName: masterName
-          };
-
-          // Create component in database
-          const createdComponentId = await componentService.createComponent(componentData);
-          
-          // Try to export image for the master component
-          try {
-            const imageUrl = await figmaImageSync.exportAndUploadComponentImage(
-              firstVariant.node_id || firstVariant.key,
-              firstVariant.key,
-              createdComponentId,
-              {
-                figmaFileId,
-                figmaAccessToken,
-                imageFormat: 'png',
-                imageScale: 2
-              }
-            );
-            
-            await componentService.updateComponent(createdComponentId, { imageUrl: imageUrl });
-            console.log(`✅ Image exported and uploaded for ${masterName}`);
-          } catch (imageError) {
-            console.warn(`⚠️ Could not export image for ${masterName}:`, imageError);
-            await componentService.updateComponent(createdComponentId, {
-              imageUrl: 'https://picsum.photos/400/240?random=' + Math.random()
-            });
-          }
-
-          successCount++;
-          console.log(`✅ Successfully imported master component: ${masterName} with ${variants.length} variants`);
-
-        } catch (error) {
-          console.error(`Failed to process ${masterName}:`, error);
-          failCount++;
-        }
-      }
-
-      setImportStatus(`🎉 Large-scale import completed! ${successCount} master components, ${failCount} failed`);
-      await fetchComponents();
-      
-      setTimeout(() => setImportStatus(''), 5000);
-
-    } catch (error) {
-      setImportStatus(`❌ Large-scale import failed: ${error}`);
       setTimeout(() => setImportStatus(''), 5000);
     } finally {
       setImporting(false);
@@ -607,8 +423,6 @@ const AdminPanel: React.FC = () => {
       return parts[parts.length - 1] || 'default';
     }
   };
-
-
 
   return (
     <div style={{ 
