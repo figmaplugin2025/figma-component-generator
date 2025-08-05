@@ -6,12 +6,14 @@ interface CustomModuleModalProps {
   isVisible: boolean;
   onClose: () => void;
   onApplyChanges?: (changes: any) => void;
+  customizationMode?: 'single' | 'set' | null;
 }
 
 const CustomModuleModal: React.FC<CustomModuleModalProps> = ({ 
   isVisible, 
   onClose,
-  onApplyChanges 
+  onApplyChanges,
+  customizationMode
 }) => {
   const handleApplyChanges = (changes: any) => {
     if (onApplyChanges) {
@@ -31,6 +33,7 @@ const CustomModuleModal: React.FC<CustomModuleModalProps> = ({
         <CustomModule 
           onApplyChanges={handleApplyChanges}
           onCancel={handleCancel}
+          customizationMode={customizationMode}
         />
       </div>
     </div>

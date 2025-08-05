@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import BackSection from './BackSection';
 import ComponentDetailsActions from './ComponentDetailsActions';
 import CustomModuleModal from './CustomModuleModal';
+import CustomModuleChoice from './CustomModuleChoice';
 // import UserLoggedInSection from './UserLoggedInSection'; // Commented out after removal
 
 interface ComponentDetailData {
@@ -57,11 +58,27 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
   onLogout
 }) => {
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
+  const [showCustomModuleChoice, setShowCustomModuleChoice] = useState(false);
+  const [customizationMode, setCustomizationMode] = useState<'single' | 'set' | null>(null);
 
   const handleCustomize = () => {
+    setShowCustomModuleChoice(true);
+  };
+
+  const handleChoiceContinue = (mode: 'single' | 'set') => {
+    setCustomizationMode(mode);
+    setShowCustomModuleChoice(false);
     setShowCustomModuleModal(true);
   };
 
+  const handleChoiceCancel = () => {
+    setShowCustomModuleChoice(false);
+  };
+
+  const handleCustomModuleClose = () => {
+    setShowCustomModuleModal(false);
+    setCustomizationMode(null);
+  };
 
   // Debug: Log the data being received
   console.log('🔍 ComponentCardDetailedView received data:', data);
@@ -170,20 +187,34 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         }}
       />
 
+      {/* CustomModuleChoice Modal */}
+      {showCustomModuleChoice && (
+        <div className="modal-overlay">
+          <CustomModuleChoice
+            onContinue={(mode) => handleChoiceContinue(mode)}
+            onCancel={handleChoiceCancel}
+          />
+        </div>
+      )}
+
       {/* CustomModule Modal */}
-      <CustomModuleModal 
-        isVisible={showCustomModuleModal}
-        onClose={() => setShowCustomModuleModal(false)}
-        onApplyChanges={(changes) => {
-          console.log('✅ Customization changes applied:', changes);
-          // Here you can handle the customization changes
-          // For example, update the component with new properties
-          // or trigger a regeneration with the new settings
-          
-          // You could also show a success notification
-          alert(`Component customized with: ${JSON.stringify(changes, null, 2)}`);
-        }}
-      />
+      {showCustomModuleModal && (
+        <CustomModuleModal 
+          isVisible={showCustomModuleModal}
+          onClose={handleCustomModuleClose}
+          customizationMode={customizationMode}
+          onApplyChanges={(changes) => {
+            console.log('✅ Customization changes applied:', changes);
+            console.log('✅ Customization mode:', customizationMode);
+            // Here you can handle the customization changes
+            // For example, update the component with new properties
+            // or trigger a regeneration with the new settings
+            
+            // You could also show a success notification
+            alert(`Component customized with mode: ${customizationMode}, changes: ${JSON.stringify(changes, null, 2)}`);
+          }}
+        />
+      )}
     </div>
   );
 };
