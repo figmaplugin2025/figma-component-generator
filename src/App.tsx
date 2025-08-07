@@ -14,7 +14,6 @@ const App: React.FC = () => {
   const [activeSection, setActiveSection] = useState<null | 'user' | 'search'>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentPage, setCurrentPage] = useState<'main' | 'category' | 'detail'>('main');
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
   const [selectedCard, setSelectedCard] = useState<ComponentCardData | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -54,10 +53,6 @@ const App: React.FC = () => {
       setActiveSection('user');
     }
   };
-  const handleGoogleLogin = () => {
-    setIsLoggedIn(true);
-    setActiveSection('user');
-  };
   const handleLogout = () => {
     setIsLoggedIn(false);
     setActiveSection(null);
@@ -77,14 +72,13 @@ const App: React.FC = () => {
   };
 
   // Navigation handlers
-  const handleCategoryClick = (categoryIndex: number) => {
-    setSelectedCategory(categoryIndex);
+  const handleCategoryClick = (_categoryIndex: number) => {
     setCurrentPage('category');
   };
 
   const handleBackToMain = () => {
     setCurrentPage('main');
-    setSelectedCategory(null);
+    // setSelectedCategory(null); // This line was removed
     setSelectedCard(null);
   };
 
@@ -97,12 +91,6 @@ const App: React.FC = () => {
   // Placeholder handlers for detail view actions
   const handleGenerate = () => {
     console.log('Generate clicked');
-  };
-  const handleCustomize = () => {
-    console.log('Customize clicked');
-  };
-  const handleGetVolts = () => {
-    console.log('Get volts clicked');
   };
 
   return (
@@ -192,9 +180,6 @@ const App: React.FC = () => {
           data={selectedCard}
           onBack={handleBackToMain}
           onGenerate={handleGenerate}
-          onCustomize={handleCustomize}
-          onGetVolts={handleGetVolts}
-          onLogout={handleLogout}
         />
       ) : null}
     </div>

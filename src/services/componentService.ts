@@ -83,6 +83,140 @@ export interface ComponentMetadata {
   };
 }
 
+// Enhanced component selection interface
+export interface ComponentPreferences {
+  size: 'large' | 'small';
+  style: 'dark' | 'light';
+  image?: string; // Firebase image URL
+}
+
+// Enhanced component variant with parsed properties
+export interface EnhancedComponentVariant extends ComponentData {
+  parsedVariants?: {
+    size: 'large' | 'small';
+    style: 'dark' | 'light';
+  };
+}
+
+// Enhanced component selection logic
+export const selectComponentVariant = (
+  components: ComponentData[], 
+  preferences: ComponentPreferences
+): ComponentData | null => {
+  try {
+    console.log('🔍 Selecting component variant with preferences:', preferences);
+    
+    // Find component that matches size + style
+    const matchingComponent = components.find(comp => {
+      const name = comp.title.toLowerCase();
+      const hasSize = name.includes(preferences.size);
+      const hasStyle = name.includes(preferences.style);
+      
+      console.log(`🔍 Checking component: ${comp.title}`);
+      console.log(`  - Has size '${preferences.size}': ${hasSize}`);
+      console.log(`  - Has style '${preferences.style}': ${hasStyle}`);
+      
+      return hasSize && hasStyle;
+    });
+    
+    if (matchingComponent) {
+      console.log(`✅ Found matching component: ${matchingComponent.title}`);
+      return matchingComponent;
+    }
+    
+    // Fallback to first component if no match found
+    console.log('⚠️ No matching component found, using first component');
+    return components.length > 0 ? components[0] : null;
+  } catch (error) {
+    console.error('❌ Error selecting component variant:', error);
+    return components.length > 0 ? components[0] : null;
+  }
+};
+
+// Group components by their master component
+export const groupComponentsByMaster = (components: ComponentData[]): Record<string, ComponentData[]> => {
+  const groups: Record<string, ComponentData[]> = {};
+  
+  components.forEach(component => {
+    const name = component.title;
+    
+    // Parse component name to extract master name
+    // e.g., ".clasroom-card/.dark/.large" -> master: ".clasroom-card"
+    let masterName = name;
+    
+    if (name.includes('/')) {
+      const parts = name.split('/');
+      if (parts.length >= 2) {
+        masterName = parts[0]; // Take the first part as master name
+      }
+    }
+    
+    if (!groups[masterName]) {
+      groups[masterName] = [];
+    }
+    
+    groups[masterName].push(component);
+  });
+  
+  console.log('📋 Grouped components by master:', groups);
+  return groups;
+};
+
+// Get default component from a group (for "Generate" button)
+export const getDefaultComponent = (components: ComponentData[]): ComponentData | null => {
+  if (components.length === 0) return null;
+  
+  // Priority order for default component:
+  // 1. Component with "default" in name
+  // 2. Component with "dark" and "large" (most common)
+  // 3. First component alphabetically
+  
+  const defaultComponent = components.find(comp => 
+    comp.title.toLowerCase().includes('default')
+  );
+  
+  if (defaultComponent) {
+    console.log('✅ Found default component:', defaultComponent.title);
+    return defaultComponent;
+  }
+  
+  const darkLargeComponent = components.find(comp => {
+    const name = comp.title.toLowerCase();
+    return name.includes('dark') && name.includes('large');
+  });
+  
+  if (darkLargeComponent) {
+    console.log('✅ Found dark/large component as default:', darkLargeComponent.title);
+    return darkLargeComponent;
+  }
+  
+  console.log('✅ Using first component as default:', components[0].title);
+  return components[0];
+};
+
+// Parse component variants from name
+export const parseComponentVariants = (componentName: string): { size: 'large' | 'small', style: 'dark' | 'light' } | null => {
+  const name = componentName.toLowerCase();
+  
+  // Extract size
+  let size: 'large' | 'small' = 'large';
+  if (name.includes('small')) {
+    size = 'small';
+  } else if (name.includes('large')) {
+    size = 'large';
+  }
+  
+  // Extract style
+  let style: 'dark' | 'light' = 'dark';
+  if (name.includes('light')) {
+    style = 'light';
+  } else if (name.includes('dark')) {
+    style = 'dark';
+  }
+  
+  return { size, style };
+};
+
 class ComponentService {
   private collectionName = 'components';
 
@@ -373,6 +507,49 @@ class ComponentService {
       console.log(`✅ Cleared ${allComponents.length} components`);
     } catch (error) {
       console.error('❌ Error clearing components:', error);
+      throw error;
+    }
+  }
+
+  // Get components by master name (for variant selection)
+  async getComponentsByMasterName(masterName: string): Promise<ComponentData[]> {
+    try {
+      const q = query(
+        collection(db, this.collectionName),
+        where('masterName', '==', masterName)
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ComponentData[];
+    } catch (error) {
+      console.error('Error getting components by master name:', error);
+      throw error;
+    }
+  }
+
+  // Get default component for a master component
+  async getDefaultComponentForMaster(masterName: string): Promise<ComponentData | null> {
+    try {
+      const components = await this.getComponentsByMasterName(masterName);
+      return getDefaultComponent(components);
+    } catch (error) {
+      console.error('Error getting default component for master:', error);
+      throw error;
+    }
+  }
+
+  // Get component variant based on preferences
+  async getComponentVariant(
+    masterName: string, 
+    preferences: ComponentPreferences
+  ): Promise<ComponentData | null> {
+    try {
+      const components = await this.getComponentsByMasterName(masterName);
+      return selectComponentVariant(components, preferences);
+    } catch (error) {
+      console.error('Error getting component variant:', error);
       throw error;
     }
   }

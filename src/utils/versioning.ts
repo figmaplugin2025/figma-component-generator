@@ -75,6 +75,24 @@ export const PLUGIN_VERSIONS: PluginVersion[] = [
       "Perfect visual fidelity achieved"
     ],
     isStable: true,
+    isCurrent: false
+  },
+  {
+    version: "1.4.0",
+    date: "2024-01-20",
+    description: "Enhanced UI with standardized buttons and customization system",
+    changes: [
+      "Standardized primary and secondary button styles",
+      "Added reset functionality for customizations",
+      "Implemented customization token system with change counting",
+      "Added CustomModuleChoice component for mode selection",
+      "Enhanced dropdown functionality in CustomModule",
+      "Updated navigation background to light gray (#F9F9F9)",
+      "Improved button layout with proper flex properties",
+      "Added real-time customization count tracking",
+      "Enhanced user experience with toggle functionality"
+    ],
+    isStable: true,
     isCurrent: true
   }
 ];

@@ -2,8 +2,21 @@ import React, { useState } from 'react';
 import { useComponents } from '../hooks/useComponents';
 import { figmaImageSync } from '../utils/figmaImageSync';
 import { componentService } from '../services/componentService';
+import { imageService } from '../services/imageService';
 import VersionInfo from './VersionInfo';
-import { ComponentVersionTracker } from '../utils/versioning';
+
+// Interface for Figma component data
+interface FigmaComponentData {
+  name: string;
+  key: string;
+  node_id: string;
+  absoluteBoundingBox?: {
+    width: number;
+    height: number;
+  };
+  isVariant?: boolean;
+  masterComponentName?: string;
+}
 
 const AdminPanel: React.FC = () => {
   const { components, loading, error, fetchComponents } = useComponents();
@@ -25,7 +38,6 @@ const AdminPanel: React.FC = () => {
 
     try {
       // Step 1: Get ALL components and component sets
-      console.log('🔍 Fetching all components and component sets...');
       const [allComponentsResponse, allComponentSetsResponse] = await Promise.all([
         fetch(`https://api.figma.com/v1/files/${figmaFileId}/components`, {
           headers: { 'X-Figma-Token': figmaAccessToken }
@@ -42,18 +54,13 @@ const AdminPanel: React.FC = () => {
       const allComponents = await allComponentsResponse.json();
       const allComponentSets = await allComponentSetsResponse.json();
 
-      console.log('🔍 Found all components:', allComponents.meta?.components || []);
-      console.log('🔍 Found all component sets:', allComponentSets.meta?.component_sets || []);
-
       // Step 2: Expand component sets to get their individual variants
-      const expandedItems = [...(allComponents.meta?.components || [])];
+      const expandedItems: FigmaComponentData[] = [...(allComponents.meta?.components || [])];
       
       const componentSets = allComponentSets.meta?.component_sets || [];
-      console.log('🔍 Component sets to process:', componentSets);
       
       for (const componentSet of componentSets) {
         try {
-          console.log(`🔍 Expanding component set: ${componentSet.name}`);
           
           // Get detailed information about the component set
           const setDetailsResponse = await fetch(`https://api.figma.com/v1/files/${figmaFileId}/component_sets?ids=${componentSet.key}`, {
@@ -64,21 +71,17 @@ const AdminPanel: React.FC = () => {
           
           if (setDetailsResponse.ok) {
             const setDetails = await setDetailsResponse.json();
-            console.log(`🔍 Component set details for ${componentSet.name}:`, setDetails);
             
             // If the component set has children (variants), add them
             if (setDetails.meta && setDetails.meta.component_sets && setDetails.meta.component_sets[componentSet.key]) {
               const setInfo = setDetails.meta.component_sets[componentSet.key];
-              console.log(`🔍 Component set info:`, setInfo);
               
               // Instead of adding the component set itself, add each variant as a separate component
               // This way we can import each variant individually
               if (setInfo.children) {
-                console.log(`🔍 Component set children:`, setInfo.children);
                 // Add each child as a separate component
                 for (const child of setInfo.children) {
                   if (child.type === 'COMPONENT') {
-                    console.log(`🔍 Adding variant: ${componentSet.name}/${child.name} with key: ${child.key}`);
                     expandedItems.push({
                       ...child,
                       name: `${componentSet.name}/${child.name}`,
@@ -99,45 +102,28 @@ const AdminPanel: React.FC = () => {
         }
       }
       
-      console.log('🔍 All expanded items:', expandedItems);
-      console.log('🔍 Expanded items type:', typeof expandedItems);
-      console.log('🔍 Expanded items length:', expandedItems.length);
-      
       if (!Array.isArray(expandedItems)) {
-        console.error('❌ Expanded items is not an array:', expandedItems);
         throw new Error('Expanded items is not an array');
       }
       
       const masterComponents = groupComponentsByMaster(expandedItems);
-      console.log('📋 Master components:', masterComponents);
 
       let successCount = 0;
       let failCount = 0;
 
       // Step 3: Import each master component
-      console.log('🔍 Master components object:', masterComponents);
-      
       for (const [masterName, variants] of Object.entries(masterComponents)) {
         try {
-          console.log(`🔄 Processing master component: ${masterName}`);
-          console.log(`🔍 Variants for ${masterName}:`, variants);
-          
           if (!Array.isArray(variants) || variants.length === 0) {
-            console.warn(`⚠️ No variants found for ${masterName}, skipping`);
             continue;
           }
           
           // Use the first variant's data as the master component data
-          const firstVariant = variants[0] as any;
-      
-          console.log('🔍 First variant data:', firstVariant);
-          console.log('🔍 First variant key:', firstVariant.key);
-          console.log('🔍 First variant node_id:', firstVariant.node_id);
+          const firstVariant = variants[0] as FigmaComponentData;
           
           // Import each variant as a separate component
           for (const variant of variants) {
             try {
-              console.log(`🔄 Processing variant: ${variant.name}`);
               
               // Create component data for each individual variant
               const componentData = {
@@ -184,7 +170,6 @@ const AdminPanel: React.FC = () => {
                 );
                 
                 await componentService.updateComponent(createdComponentId, { imageUrl: imageUrl });
-                console.log(`✅ Image exported and uploaded for ${variant.name}`);
               } catch (imageError) {
                 console.warn(`⚠️ Could not export image for ${variant.name}:`, imageError);
                 await componentService.updateComponent(createdComponentId, {
@@ -193,7 +178,6 @@ const AdminPanel: React.FC = () => {
               }
 
               successCount++;
-              console.log(`✅ Successfully imported variant: ${variant.name}`);
 
             } catch (variantError) {
               console.error(`Failed to import variant: ${variant.name}`, variantError);
@@ -221,25 +205,33 @@ const AdminPanel: React.FC = () => {
   };
 
   const handleClearAllComponents = async () => {
-    if (!confirm('⚠️ Are you sure you want to delete ALL components from the database? This action cannot be undone.')) {
+    if (!confirm('⚠️ Are you sure you want to delete ALL components and their images? This action cannot be undone.')) {
       return;
     }
 
     setImporting(true);
-    setImportStatus('🗑️ Clearing all components...');
+    setImportStatus('🗑️ Clearing all components and images...');
 
     try {
       // Get all components first
       const allComponents = await componentService.getAllComponents();
       
-      // Delete each component
+      // Delete each component from database
       for (const component of allComponents) {
         if (component.id) {
           await componentService.deleteComponent(component.id);
         }
       }
 
-      setImportStatus(`✅ Successfully deleted ${allComponents.length} components`);
+      // Delete all component images from Firebase Storage
+      try {
+        await imageService.deleteAllComponentImages();
+        setImportStatus(`✅ Successfully deleted ${allComponents.length} components and all associated images`);
+      } catch (imageError) {
+        console.error('❌ Failed to delete images:', imageError);
+        setImportStatus(`✅ Deleted ${allComponents.length} components, but some images may remain`);
+      }
+
       await fetchComponents(); // Refresh the list
       
       setTimeout(() => setImportStatus(''), 3000);
@@ -253,7 +245,7 @@ const AdminPanel: React.FC = () => {
   };
 
   // Smart volt calculation based on component complexity
-  const calculateVolts = (component: any): number => {
+  const calculateVolts = (component: FigmaComponentData): number => {
     const width = component.absoluteBoundingBox?.width || 400;
     const height = component.absoluteBoundingBox?.height || 240;
     const area = width * height;
@@ -345,36 +337,15 @@ const AdminPanel: React.FC = () => {
     return tags;
   };
 
-  // Helper function to find components in a node
-  const findComponentsInNode = (node: any): any[] => {
-    const components: any[] = [];
-    if (node.document && node.document.children) {
-      for (const child of node.document.children) {
-        if (child.document) {
-          components.push(...findComponentsInNode(child));
-        } else if (child.type === 'COMPONENT') {
-          components.push(child);
-        }
-      }
-    }
-    return components;
-  };
-
   // Helper function to group components by their master component
-  const groupComponentsByMaster = (components: any[]): Record<string, any[]> => {
-    console.log('🔍 Grouping components:', components);
-    console.log('🔍 Components type:', typeof components);
-    console.log('🔍 Components length:', components.length);
-    
+  const groupComponentsByMaster = (components: FigmaComponentData[]): Record<string, FigmaComponentData[]> => {
     if (!Array.isArray(components)) {
-      console.error('❌ Components is not an array:', components);
       throw new Error('Components is not an array');
     }
     
-    const masterGroups: Record<string, any[]> = {};
+    const masterGroups: Record<string, FigmaComponentData[]> = {};
     
-    components.forEach((component: any, index: number) => {
-      console.log(`🔍 Processing component ${index}:`, component);
+    components.forEach((component: FigmaComponentData) => {
       const name = component.name || '';
       
       // Handle different naming patterns
@@ -395,8 +366,6 @@ const AdminPanel: React.FC = () => {
         }
       }
       
-      console.log(`🔍 Master name for component ${index}: ${masterName}`);
-      
       if (!masterGroups[masterName]) {
         masterGroups[masterName] = [];
       }
@@ -404,24 +373,7 @@ const AdminPanel: React.FC = () => {
       masterGroups[masterName].push(component);
     });
     
-    console.log('🔍 Final master groups:', masterGroups);
     return masterGroups;
-  };
-
-  // Helper function to extract variant name from component name
-  const extractVariantName = (componentName: string): string => {
-    // Handle different naming patterns
-    if (componentName.includes('=')) {
-      // Pattern: "Component Name=variant"
-      return componentName.split('=')[1] || 'default';
-    } else if (componentName.includes('/')) {
-      // Pattern: "Component Name/variant"
-      return componentName.split('/').pop() || 'default';
-    } else {
-      // Pattern: "Component Name variant"
-      const parts = componentName.split(' ');
-      return parts[parts.length - 1] || 'default';
-    }
   };
 
   return (
@@ -438,7 +390,7 @@ const AdminPanel: React.FC = () => {
         fontSize: '18px',
         fontWeight: '600'
       }}>
-        🚀 Component Management
+        🚀 Figma Component Import
       </h3>
       
       {/* Credentials Section */}
@@ -574,6 +526,7 @@ const AdminPanel: React.FC = () => {
         </div>
       </div>
       
+      {/* Action Buttons */}
       <div style={{ marginBottom: '20px' }}>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button 
@@ -606,278 +559,7 @@ const AdminPanel: React.FC = () => {
               fontWeight: '500'
             }}
           >
-            {importing ? '⏳ Processing...' : '🗑️ Clear All Components'}
-          </button>
-
-          <button 
-            onClick={async () => {
-              if (!figmaAccessToken) {
-                alert('Please enter your Figma Access Token first');
-                return;
-              }
-              
-              try {
-                setImportStatus('🔍 Testing access token...');
-                console.log('🔑 Testing token:', figmaAccessToken.substring(0, 10) + '...');
-                
-                // Test with file endpoint instead of /me endpoint
-                const response = await fetch(`https://api.figma.com/v1/files/${figmaFileId}`, {
-                  headers: {
-                    'X-Figma-Token': figmaAccessToken
-                  }
-                });
-                
-                console.log('📡 Response status:', response.status);
-                console.log('📡 Response headers:', response.headers);
-                
-                if (response.ok) {
-                  const data = await response.json();
-                  console.log('✅ Token test successful:', data);
-                  setImportStatus(`✅ Token valid! Can access file: ${data.name || 'Unknown file'}`);
-                } else {
-                  const errorText = await response.text();
-                  console.error('❌ Token test failed:', response.status, errorText);
-                  setImportStatus(`❌ Token invalid: ${response.status} ${response.statusText} - ${errorText}`);
-                }
-                
-                setTimeout(() => setImportStatus(''), 5000);
-              } catch (error) {
-                console.error('❌ Token test error:', error);
-                setImportStatus(`❌ Token test failed: ${error}`);
-                setTimeout(() => setImportStatus(''), 5000);
-              }
-            }}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#34C759',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-          >
-            🧪 Test Token
-          </button>
-          <button 
-            onClick={async () => {
-              if (!figmaAccessToken) {
-                alert('Please enter your Figma Access Token first');
-                return;
-              }
-              
-              try {
-                setImportStatus('🔍 Testing specific component...');
-                
-                // Extract node ID from the URL: node-id=279-643
-                const nodeId = '279:643'; // Convert from URL format to API format
-                console.log('🔍 Testing component with node ID:', nodeId);
-                
-                // Test if we can get component info for this specific node
-                const response = await fetch(`https://api.figma.com/v1/files/${figmaFileId}/nodes?ids=${nodeId}`, {
-                  headers: {
-                    'X-Figma-Token': figmaAccessToken
-                  }
-                });
-                
-                console.log('📡 Node response status:', response.status);
-                
-                if (response.ok) {
-                  const data = await response.json();
-                  console.log('✅ Node data:', data);
-                  
-                  if (data.nodes && data.nodes[nodeId]) {
-                    const node = data.nodes[nodeId];
-                    console.log('✅ Component found:', node);
-                    
-                    // Show all available components in this node
-                    if (node.document && node.document.children) {
-                      console.log('🔍 Searching for components in node...');
-                      const components = findComponentsInNode(node.document);
-                      console.log('📋 Found components:', components);
-                      
-                      if (components.length > 0) {
-                        setImportStatus(`✅ Found ${components.length} components in node. Check console for details.`);
-                      } else {
-                        setImportStatus('❌ No components found in this node');
-                      }
-                    } else {
-                      setImportStatus(`✅ Component found: ${node.document?.name || 'Unknown'}`);
-                    }
-                  } else {
-                    setImportStatus('❌ Component not found in node data');
-                  }
-                } else {
-                  const errorText = await response.text();
-                  console.error('❌ Node test failed:', response.status, errorText);
-                  setImportStatus(`❌ Node test failed: ${response.status} ${response.statusText}`);
-                }
-                
-                setTimeout(() => setImportStatus(''), 5000);
-              } catch (error) {
-                console.error('❌ Component test error:', error);
-                setImportStatus(`❌ Component test failed: ${error}`);
-                setTimeout(() => setImportStatus(''), 5000);
-              }
-            }}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#FF9500',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-          >
-            🔍 Test Component
-          </button>
-          <button 
-            onClick={async () => {
-              if (!figmaAccessToken) {
-                alert('Please enter your Figma Access Token first');
-                return;
-              }
-              
-              try {
-                setImportStatus('🔍 Searching entire file for components...');
-                
-                // Get all components from the file
-                const response = await fetch(`https://api.figma.com/v1/files/${figmaFileId}/components`, {
-                  headers: {
-                    'X-Figma-Token': figmaAccessToken
-                  }
-                });
-                
-                console.log('📡 Components response status:', response.status);
-                
-                if (response.ok) {
-                  const data = await response.json();
-                  console.log('✅ All components in file:', data);
-                  
-                  if (data.meta && data.meta.components) {
-                    const components = Object.values(data.meta.components);
-                    console.log('📋 Found components:', components);
-                    
-                    if (components.length > 0) {
-                      setImportStatus(`✅ Found ${components.length} components in file. Check console for details.`);
-                      
-                      // Show each component's details
-                      components.forEach((comp: any, index: number) => {
-                        console.log(`Component ${index + 1}:`, {
-                          name: comp.name,
-                          key: comp.key,
-                          description: comp.description,
-                          node_id: comp.node_id
-                        });
-                      });
-                    } else {
-                      setImportStatus('❌ No components found in file');
-                    }
-                  } else {
-                    setImportStatus('❌ No component data in response');
-                  }
-                } else {
-                  const errorText = await response.text();
-                  console.error('❌ Components search failed:', response.status, errorText);
-                  setImportStatus(`❌ Components search failed: ${response.status} ${response.statusText}`);
-                }
-                
-                setTimeout(() => setImportStatus(''), 5000);
-              } catch (error) {
-                console.error('❌ Components search error:', error);
-                setImportStatus(`❌ Components search failed: ${error}`);
-                setTimeout(() => setImportStatus(''), 5000);
-              }
-            }}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#5856D6',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500'
-            }}
-          >
-            🔍 Search All Components
-          </button>
-          
-          {/* Search Component Sets Button */}
-          <button
-            onClick={async () => {
-              if (!figmaAccessToken) {
-                alert('Please enter your Figma Access Token first');
-                return;
-              }
-              
-              try {
-                setImportStatus('🔍 Searching for component sets...');
-                
-                // Get component sets from the file
-                const response = await fetch(`https://api.figma.com/v1/files/${figmaFileId}/component_sets`, {
-                  headers: {
-                    'X-Figma-Token': figmaAccessToken
-                  }
-                });
-                
-                console.log('📡 Component Sets response status:', response.status);
-                
-                if (response.ok) {
-                  const data = await response.json();
-                  console.log('✅ All component sets in file:', data);
-                  
-                  if (data.meta && data.meta.component_sets) {
-                    const componentSets = Object.values(data.meta.component_sets);
-                    console.log('📋 Found component sets:', componentSets);
-                    
-                    if (componentSets.length > 0) {
-                      setImportStatus(`✅ Found ${componentSets.length} component sets in file. Check console for details.`);
-                      
-                      // Show each component set's details
-                      componentSets.forEach((set: any, index: number) => {
-                        console.log(`Component Set ${index + 1}:`, {
-                          name: set.name,
-                          key: set.key,
-                          description: set.description,
-                          node_id: set.node_id
-                        });
-                      });
-                    } else {
-                      setImportStatus('❌ No component sets found in file');
-                    }
-                  } else {
-                    setImportStatus('❌ No component set data in response');
-                  }
-                } else {
-                  const errorText = await response.text();
-                  console.error('❌ Component sets search failed:', response.status, errorText);
-                  setImportStatus(`❌ Component sets search failed: ${response.status} ${response.statusText}`);
-                }
-                
-                setTimeout(() => setImportStatus(''), 5000);
-              } catch (error) {
-                console.error('❌ Component sets search error:', error);
-                setImportStatus(`❌ Component sets search failed: ${error}`);
-                setTimeout(() => setImportStatus(''), 5000);
-              }
-            }}
-            style={{
-              padding: '12px 24px',
-              backgroundColor: '#FF6B35',
-              color: 'white',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              marginLeft: '8px'
-            }}
-          >
-            🔍 Search Component Sets
+            {importing ? '⏳ Processing...' : '🗑️ Clear All Components & Images'}
           </button>
         </div>
         
@@ -895,6 +577,7 @@ const AdminPanel: React.FC = () => {
         )}
       </div>
 
+      {/* Components List */}
       {loading && <div style={{ color: '#666' }}>Loading components...</div>}
       {error && <div style={{ color: '#D32F2F', backgroundColor: '#FFEBEE', padding: '10px', borderRadius: '6px' }}>
         Error: {error}
@@ -962,7 +645,6 @@ const AdminPanel: React.FC = () => {
                       <div>⚡ {component.voltsCost} volts</div>
                       <div>📊 {component.generateCount} generations</div>
                     </div>
-
                   </div>
                 </div>
               </div>

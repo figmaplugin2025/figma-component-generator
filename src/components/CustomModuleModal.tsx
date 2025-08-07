@@ -5,17 +5,21 @@ import './CustomModuleModal.css';
 interface CustomModuleModalProps {
   isVisible: boolean;
   onClose: () => void;
-  onApplyChanges?: (changes: any) => void;
   customizationMode?: 'single' | 'set' | null;
+  onApplyChanges?: (changes: Record<string, string>) => void;
+  availableComponents?: any[]; // Add this prop for component selection
+  componentId?: string; // Add componentId prop for database updates
 }
 
 const CustomModuleModal: React.FC<CustomModuleModalProps> = ({ 
   isVisible, 
   onClose,
   onApplyChanges,
-  customizationMode
+  customizationMode,
+  availableComponents = [],
+  componentId // Add componentId prop
 }) => {
-  const handleApplyChanges = (changes: any) => {
+  const handleApplyChanges = (changes: Record<string, string>) => {
     if (onApplyChanges) {
       onApplyChanges(changes);
     }
@@ -34,6 +38,8 @@ const CustomModuleModal: React.FC<CustomModuleModalProps> = ({
           onApplyChanges={handleApplyChanges}
           onCancel={handleCancel}
           customizationMode={customizationMode}
+          availableComponents={availableComponents}
+          componentId={componentId} // Pass componentId to CustomModule
         />
       </div>
     </div>

@@ -9,7 +9,12 @@ const CustomModuleChoice: React.FC<CustomModuleChoiceProps> = ({ onContinue, onC
   const [selectedCard, setSelectedCard] = useState<'single' | 'set' | null>(null);
 
   const handleCardClick = (cardType: 'single' | 'set') => {
-    setSelectedCard(cardType);
+    // Toggle functionality: if clicking the same card, deselect it
+    if (selectedCard === cardType) {
+      setSelectedCard(null);
+    } else {
+      setSelectedCard(cardType);
+    }
   };
 
   const handleContinue = () => {
@@ -80,13 +85,13 @@ const CustomModuleChoice: React.FC<CustomModuleChoiceProps> = ({ onContinue, onC
               <div className="actions-content">
                 <div className="actions-buttons">
                   <button 
-                    className={`apply-changes-btn ${!selectedCard ? 'disabled' : ''}`}
+                    className={`btn-primary ${!selectedCard ? 'disabled' : ''}`}
                     onClick={handleContinue}
                     disabled={!selectedCard}
                   >
                     Continue
                   </button>
-                  <button className="cancel-btn" onClick={onCancel}>Go Back</button>
+                  <button className="btn-secondary" onClick={onCancel}>Go Back</button>
                 </div>
               </div>
             </div>

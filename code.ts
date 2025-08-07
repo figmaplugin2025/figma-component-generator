@@ -35,11 +35,12 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'insert-component') {
     try {
       console.log('🎯 Figma received insert-component message:', msg);
-      const { componentId, figmaFileId, figmaComponentKey, title, specs, variantKeys } = msg;
+      const { componentId, figmaFileId, figmaComponentKey, title, specs, variantKeys, customImageUrl } = msg;
       console.log('🔑 Component key:', figmaComponentKey);
       console.log('📦 Title:', title);
       console.log('⚙️ Specs:', specs);
       console.log('🎨 Variant keys:', variantKeys);
+      console.log('🖼️ Custom image URL:', customImageUrl);
       
       // NEW: Check if we have variant keys for master component creation
       if (variantKeys && variantKeys.length > 0) {
@@ -47,7 +48,7 @@ figma.ui.onmessage = async (msg) => {
         await createMasterComponentWithVariants(variantKeys, title, specs);
       } else {
         // Original single component insertion logic
-        await insertSingleComponent(figmaComponentKey, title, specs, componentId);
+        await insertSingleComponent(figmaComponentKey, title, specs, componentId, customImageUrl);
       }
       
     } catch (error) {
@@ -79,6 +80,216 @@ figma.ui.onmessage = async (msg) => {
     }
   }
 };
+
+// NEW: Function to replace image fills within a component
+async function replaceComponentImage(node: SceneNode, imageUrl: string) {
+  try {
+    // Fetch the image data from URL
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    }
+    
+    const imageData = await response.arrayBuffer();
+    const uint8Array = new Uint8Array(imageData);
+    
+    // Load the image into Figma
+    const image = await figma.createImage(uint8Array);
+    
+    // Recursively traverse the node and replace image fills
+    await replaceImageInNode(node, image);
+    
+  } catch (error) {
+    console.error('❌ Failed to load image from URL:', error);
+    throw error;
+  }
+}
+
+// Helper function to recursively replace image fills in a node and its children
+async function replaceImageInNode(node: SceneNode, image: Image) {
+  // Check if this node has fills that can be replaced
+  if ('fills' in node && node.fills && Array.isArray(node.fills)) {
+    const fills = node.fills as Paint[];
+    
+    for (let i = 0; i < fills.length; i++) {
+      const fill = fills[i];
+      
+      // Check if this fill is an image fill
+      if (fill.type === 'IMAGE') {
+        console.log(`🖼️ Replacing image fill in node: ${node.name}`);
+        
+        // Replace the image hash with the new image
+        fills[i] = {
+          ...fill,
+          imageHash: image.hash,
+          scaleMode: 'FILL'
+        };
+      }
+    }
+  }
+  
+  // Recursively process children
+  if ('children' in node && node.children) {
+    for (const child of node.children) {
+      await replaceImageInNode(child, image);
+    }
+  }
+}
+
+// NEW: Enhanced function to replace image in .placeholder-image frame specifically
+async function replaceImageInPlaceholderFrame(node: SceneNode, imageUrl: string) {
+  try {
+    console.log('🎯 Targeting .placeholder-image frame specifically...');
+    console.log('🖼️ Custom image URL:', imageUrl);
+    
+    // Try to fetch the image with different approaches
+    let imageData: ArrayBuffer;
+    
+    try {
+      // First try: direct fetch
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+      imageData = await response.arrayBuffer();
+    } catch (fetchError) {
+      console.warn('⚠️ Direct fetch failed, trying alternative approach:', fetchError);
+      
+      // Try alternative: use XMLHttpRequest with different headers
+      try {
+        console.log('🔄 Trying XMLHttpRequest approach...');
+        imageData = await new Promise<ArrayBuffer>((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('GET', imageUrl, true);
+          xhr.responseType = 'arraybuffer';
+          xhr.onload = () => {
+            if (xhr.status === 200) {
+              resolve(xhr.response);
+            } else {
+              reject(new Error(`XHR failed: ${xhr.status}`));
+            }
+          };
+          xhr.onerror = () => reject(new Error('XHR error'));
+          xhr.send();
+        });
+        console.log('✅ XMLHttpRequest approach succeeded');
+      } catch (xhrError) {
+        console.warn('⚠️ XMLHttpRequest also failed:', xhrError);
+        
+        // Final fallback: create a colored rectangle as placeholder
+        console.log('🔄 Creating fallback colored rectangle...');
+        
+        // Recursive function to find and replace .placeholder-image frame
+        async function findAndReplacePlaceholder(node: SceneNode): Promise<boolean> {
+          // Check if this is the .placeholder-image frame
+          if (node.name === '.placeholder-image') {
+            console.log(`🎯 Found .placeholder-image frame: "${node.name}"`);
+            
+            // Handle different node types that can have fills
+            if (node.type === 'RECTANGLE' || node.type === 'FRAME' || node.type === 'INSTANCE') {
+              if ('fills' in node && node.fills && Array.isArray(node.fills)) {
+                const fills = node.fills as Paint[];
+                
+                // Replace all fills with a colored placeholder that indicates custom image
+                for (let i = 0; i < fills.length; i++) {
+                  fills[i] = {
+                    type: 'SOLID',
+                    color: { r: 0.2, g: 0.6, b: 0.9 } // Blue color to indicate custom image
+                  };
+                }
+                console.log(`✅ Applied colored placeholder to .placeholder-image frame: "${node.name}"`);
+                return true;
+              }
+            }
+            
+            // If it's a group or other container, process its children
+            if ('children' in node && node.children) {
+              for (const child of node.children) {
+                const found = await findAndReplacePlaceholder(child);
+                if (found) return true;
+              }
+            }
+          }
+          
+          // Recursively search children
+          if ('children' in node && node.children) {
+            for (const child of node.children) {
+              const found = await findAndReplacePlaceholder(child);
+              if (found) return true;
+            }
+          }
+          
+          return false;
+        }
+        
+        const found = await findAndReplacePlaceholder(node);
+        if (!found) {
+          console.log(`❌ .placeholder-image frame not found in component`);
+        }
+        return found;
+      }
+    }
+    
+    const uint8Array = new Uint8Array(imageData);
+    
+    // Load the image into Figma
+    const image = await figma.createImage(uint8Array);
+    
+    // Recursive function to find and replace image in .placeholder-image frame
+    async function findAndReplacePlaceholder(node: SceneNode): Promise<boolean> {
+      // Check if this is the .placeholder-image frame
+      if (node.name === '.placeholder-image') {
+        console.log(`🎯 Found .placeholder-image frame: "${node.name}"`);
+        
+        // Handle different node types that can have fills
+        if (node.type === 'RECTANGLE' || node.type === 'FRAME' || node.type === 'INSTANCE') {
+          if ('fills' in node && node.fills && Array.isArray(node.fills)) {
+            const fills = node.fills as Paint[];
+            
+            // Replace all fills with the new image
+            for (let i = 0; i < fills.length; i++) {
+              fills[i] = {
+                type: 'IMAGE',
+                imageHash: image.hash,
+                scaleMode: 'FILL'
+              };
+            }
+            console.log(`✅ Applied image to .placeholder-image frame: "${node.name}"`);
+            return true;
+          }
+        }
+        
+        // If it's a group or other container, process its children
+        if ('children' in node && node.children) {
+          for (const child of node.children) {
+            const found = await findAndReplacePlaceholder(child);
+            if (found) return true;
+          }
+        }
+      }
+      
+      // Recursively search children
+      if ('children' in node && node.children) {
+        for (const child of node.children) {
+          const found = await findAndReplacePlaceholder(child);
+          if (found) return true;
+        }
+      }
+      
+      return false;
+    }
+    
+    const found = await findAndReplacePlaceholder(node);
+    if (!found) {
+      console.log(`❌ .placeholder-image frame not found in component`);
+    }
+    return found;
+    
+  } catch (error) {
+    console.error('❌ Failed to load image from URL:', error);
+    throw error;
+  }
+}
 
 // NEW: Function to create master component with variants
 async function createMasterComponentWithVariants(variantKeys: string[], title: string, specs: any) {
@@ -332,7 +543,7 @@ async function createDetachedVariants(masterComponent: any, variants: any[]) {
 }
 
 // Original single component insertion logic
-async function insertSingleComponent(figmaComponentKey: string, title: string, specs: any, componentId: string) {
+async function insertSingleComponent(figmaComponentKey: string, title: string, specs: any, componentId: string, customImageUrl?: string) {
   let insertedNode: SceneNode | null = null;
   
   // Try to import the actual Figma component if we have a key
@@ -342,7 +553,7 @@ async function insertSingleComponent(figmaComponentKey: string, title: string, s
       
       // Check if this is a component set (master component with variants)
       if (figmaComponentKey.includes(':')) {
-        console.log(' This appears to be a component set (master component)');
+        console.log('🔍 This appears to be a component set (master component)');
         
         // For component sets, we need to handle them differently
         // First, try to import the master component itself
@@ -350,13 +561,10 @@ async function insertSingleComponent(figmaComponentKey: string, title: string, s
           const masterComponent = await figma.importComponentByKeyAsync(figmaComponentKey);
           console.log('✅ Successfully imported master component:', masterComponent.name);
           
-          // Create an instance of the master component
-          // This will show the default variant or allow users to switch variants
-          insertedNode = masterComponent.createInstance();
-          
-          // If the master component has variants, we could potentially show a variant picker
-          // For now, we'll use the default variant
-          console.log('📋 Master component variants available:', masterComponent.children?.length || 0);
+          // Create an instance of the master component and immediately detach it
+          const instance = masterComponent.createInstance();
+          insertedNode = instance.detachInstance();
+          console.log('✅ Successfully created and detached instance from master component');
           
         } catch (masterError) {
           console.error('❌ Failed to import master component:', masterError);
@@ -364,14 +572,17 @@ async function insertSingleComponent(figmaComponentKey: string, title: string, s
           // Fallback: try to import the first variant
           console.log('🔄 Trying to import first variant as fallback...');
           const component = await figma.importComponentByKeyAsync(figmaComponentKey);
-          insertedNode = component.createInstance();
+          const instance = component.createInstance();
+          insertedNode = instance.detachInstance();
+          console.log('✅ Successfully created and detached instance from variant');
         }
       } else {
         // Regular component (not a component set)
         console.log('🔍 This is a regular component');
         const component = await figma.importComponentByKeyAsync(figmaComponentKey);
-        insertedNode = component.createInstance();
-        console.log('✅ Successfully imported component:', component.name);
+        const instance = component.createInstance();
+        insertedNode = instance.detachInstance();
+        console.log('✅ Successfully imported and detached component:', component.name);
       }
       
     } catch (importError) {
@@ -429,11 +640,42 @@ async function insertSingleComponent(figmaComponentKey: string, title: string, s
   // Select the new component
   figma.currentPage.selection = [insertedNode];
   
-  // Notify the UI that the component was inserted
-  figma.ui.postMessage({
-    type: 'component-inserted',
-    success: true,
-    componentId: componentId,
-    title: title
-  });
+        // NEW: Replace image in .placeholder-image frame if custom image URL is provided
+        if (customImageUrl && insertedNode) {
+          try {
+            console.log('🖼️ Replacing image in .placeholder-image frame:', customImageUrl);
+            await replaceImageInPlaceholderFrame(insertedNode, customImageUrl);
+            console.log('✅ Image replaced in .placeholder-image frame successfully');
+          } catch (imageError) {
+            console.error('❌ Failed to replace image in .placeholder-image frame:', imageError);
+            
+            // Check if it's a CORS issue
+            const isCorsIssue = imageError instanceof Error && 
+              (imageError.message.includes('CORS') || imageError.message.includes('fetch'));
+            
+            // Notify the UI about the issue
+            figma.ui.postMessage({
+              type: 'component-inserted',
+              success: true,
+              componentId: componentId,
+              title: title,
+              customImageApplied: true,
+              corsIssue: isCorsIssue,
+              message: isCorsIssue ? 
+                'Custom image applied as colored placeholder due to CORS restrictions. The image will be visible in the browser preview.' :
+                'Custom image could not be applied to the component.'
+            });
+            return; // Exit early since we already sent the message
+          }
+        }
+        
+        // Notify the UI that the component was inserted
+        figma.ui.postMessage({
+          type: 'component-inserted',
+          success: true,
+          componentId: componentId,
+          title: title,
+          customImageApplied: !!customImageUrl,
+          corsIssue: false
+        });
 }

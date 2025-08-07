@@ -37,7 +37,7 @@ body > * {
   align-items: center;
   gap: 4px;
   border-radius: 18px;
-  background: #ff0000;
+  background: #F9F9F9;
 }
 
 .navigation__section {
@@ -1072,37 +1072,18 @@ NewsCard Component
   padding: 8px;
 }
 
-.component__details--actions-button {
-  display: flex;
-  padding: 12px;
-  justify-content: center;
-  align-items: center;
-  gap: 4px;
-  align-self: stretch;
-  border-radius: 12px;
-  background: #FF5C0A;
-  border: none;
-  cursor: pointer;
-}
 
-.component__details--actions-button span {
-  color: #FFF;
-  text-align: center;
-  font-family: Inter;
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 500;
-  line-height: normal;
-}
 
 .component__details--actions-button-token {
   display: flex;
-  padding: 4px;
+  padding: 4px 3px;
   justify-content: center;
   align-items: center;
   gap: 10px;
   border-radius: 8px;
   background: #FFF;
+  min-width: 14px;
+  width: fit-content;
 }
 
 .component__details--actions-button-token span {
@@ -1115,21 +1096,20 @@ NewsCard Component
   line-height: normal;
 }
 
-.component__details--actions-button-2 {
-  display: flex;
-  padding: 12px;
+.component__details--actions-button-token-customize {
+  display: inline-flex;
+  padding: 4px 2px;
   justify-content: center;
   align-items: center;
-  gap: 4px;
-  align-self: stretch;
-  border-radius: 12px;
-  border: 1px solid #FF5C0A;
-  background: transparent;
-  cursor: pointer;
+  gap: 10px;
+  border-radius: 8px;
+  background: #FF5C0A;
+  min-width: 14px;
+  width: fit-content;
 }
 
-.component__details--actions-button-2 span {
-  color: #FF5C0A;
+.component__details--actions-button-token-customize span {
+  color: #FFFFFF !important;
   text-align: center;
   font-family: Inter;
   font-size: 10px;
@@ -1137,6 +1117,8 @@ NewsCard Component
   font-weight: 500;
   line-height: normal;
 }
+
+
 
 /* Component Card Drag States */
 .component__card-box {
@@ -1211,4 +1193,127 @@ NewsCard Component
   .custom-module-title {
     font-size: 14px;
   }
+}
+
+/* Standardized Button Styles */
+.btn-primary {
+  display: flex;
+  height: 40px;
+  padding: 8px 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  align-self: stretch;
+  border-radius: 12px;
+  background: #FF5C0A;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-family: Inter;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background: #FF742F;
+}
+
+.btn-primary:disabled {
+  background: #FFA071;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-secondary {
+  display: flex;
+  height: 40px;
+  padding: 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  align-self: stretch;
+  border-radius: 12px;
+  border: 1px solid #FF5C0A;
+  background: transparent;
+  cursor: pointer;
+  color: #FF5C0A;
+  font-family: Inter;
+  font-size: 12px;
+  font-weight: 500;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: #FFE7DB;
+}
+
+.btn-secondary:disabled {
+  border-color: #FFA071;
+  color: #FFA071;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.customize-buttons-container {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  width: 100%;
+}
+
+.customize-buttons-container .btn-secondary {
+  display: flex;
+  height: 40px;
+  padding: 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  flex: 1 0 0 !important;
+  min-width: 0 !important;
+}
+
+.customize-buttons-container .btn-secondary svg {
+  flex-shrink: 0;
+}
+
+.btn-reset {
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  min-width: 40px !important;
+  flex-shrink: 0;
+}
+
+.btn-reset svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-primary .token-primary {
+  display: inline-flex;
+  padding: 4px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  background: #FFF;
+  color: #FF5C0A;
+  font-family: Inter;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.btn-secondary .token-secondary {
+  display: inline-flex;
+  padding: 4px;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  border-radius: 8px;
+  background: #FF5C0A;
+  color: #FFF;
+  font-family: Inter;
+  font-size: 10px;
+  font-weight: 500;
 }
