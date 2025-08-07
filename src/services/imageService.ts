@@ -133,63 +133,16 @@ export const getPluginImagesFromStorage = async (): Promise<PluginImage[]> => {
   }
 };
 
-// Enhanced function that tries Firebase Storage first, then Firestore as fallback
+// Function that returns only Cloudinary images for better user experience
 export const getPluginImages = async (): Promise<PluginImage[]> => {
   try {
-    // First, try to get images from Firebase Storage
-    const storageImages = await getPluginImagesFromStorage();
-    if (storageImages.length > 0) {
-      console.log('✅ Using images from Firebase Storage');
-      return storageImages;
-    }
-    // If no storage images, try Firestore collection
-    console.log('🔄 No storage images found, trying Firestore collection...');
-    const querySnapshot = await getDocs(collection(db, 'plugin-images'));
-    const firestoreImages = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as PluginImage[];
-    if (firestoreImages.length > 0) {
-      console.log('✅ Using images from Firestore collection');
-      return firestoreImages;
-    }
-    // If neither has images, return fallback
-    console.log('⚠️ No images found in Firebase, using fallback images');
-    return [
-      {
-        id: 'fallback1',
-        name: 'Classroom Card',
-        url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075a655?w=400&h=300&fit=crop',
-        description: 'Modern classroom setting',
-        category: 'education'
-      },
-      {
-        id: 'fallback2', 
-        name: 'Office Space',
-        url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop',
-        description: 'Professional office environment',
-        category: 'business'
-      }
-    ];
+    // Return only Cloudinary images (your 4 pre-uploaded images)
+    const cloudinaryImages = cloudinaryService.getCloudinaryImages();
+    console.log('✅ Using Cloudinary images only');
+    return cloudinaryImages;
   } catch (error) {
-    console.error('❌ Error getting plugin images:', error);
-    // Return fallback images if everything fails
-    return [
-      {
-        id: 'fallback1',
-        name: 'Classroom Card',
-        url: 'https://images.unsplash.com/photo-1524178232363-1fb2b075a655?w=400&h=300&fit=crop',
-        description: 'Modern classroom setting',
-        category: 'education'
-      },
-      {
-        id: 'fallback2', 
-        name: 'Office Space',
-        url: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=400&h=300&fit=crop',
-        description: 'Professional office environment',
-        category: 'business'
-      }
-    ];
+    console.error('❌ Error getting Cloudinary images:', error);
+    return [];
   }
 };
 
@@ -422,6 +375,207 @@ class ImageService {
       throw error;
     }
   }
+
+  /**
+   * Upload temporary preview image to Firebase Storage
+   * This creates a temporary preview image for immediate visual feedback
+   */
+  async uploadTemporaryPreview(
+    imageUrl: string,
+    componentId: string
+  ): Promise<ImageUploadResult> {
+    try {
+      console.log('🖼️ Uploading temporary preview image:', imageUrl);
+      
+      // Create a unique filename for the temporary preview
+      const timestamp = Date.now();
+      const filename = `temp-preview-${componentId}-${timestamp}.png`;
+      const storagePath = `temporary-previews/${filename}`;
+      
+      // Fetch the image from the URL
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, storagePath);
+      const uploadResult = await uploadBytes(storageRef, blob);
+      
+      // Get the download URL
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+      
+      console.log('✅ Temporary preview uploaded successfully:', downloadURL);
+      
+      return {
+        url: downloadURL,
+        path: storagePath,
+        size: blob.size,
+        contentType: blob.type
+      };
+      
+    } catch (error) {
+      console.error('❌ Error uploading temporary preview:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload generated component preview to Firebase Storage
+   * This uploads the full component card with custom image inserted
+   */
+  async uploadGeneratedComponentPreview(
+    file: File,
+    componentId: string
+  ): Promise<ImageUploadResult> {
+    try {
+      console.log('🖼️ Uploading generated component preview:', file.name);
+      
+      // Create a unique filename for the generated preview
+      const timestamp = Date.now();
+      const filename = `temp-preview-${componentId}-${timestamp}.png`;
+      const storagePath = `temporary-previews/${filename}`;
+      
+      // Upload to Firebase Storage
+      const storageRef = ref(storage, storagePath);
+      const uploadResult = await uploadBytes(storageRef, file);
+      
+      // Get the download URL
+      const downloadURL = await getDownloadURL(uploadResult.ref);
+      
+      console.log('✅ Generated component preview uploaded successfully:', downloadURL);
+      
+      return {
+        url: downloadURL,
+        path: storagePath,
+        size: file.size,
+        contentType: file.type
+      };
+      
+    } catch (error) {
+      console.error('❌ Error uploading generated component preview:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a temporary preview image from Firebase Storage
+   */
+  async deleteTemporaryPreview(imageUrl: string): Promise<void> {
+    try {
+      // Extract the storage path from the Firebase URL
+      const url = new URL(imageUrl);
+      const pathMatch = url.pathname.match(/\/o\/([^?]+)/);
+      
+      if (!pathMatch) {
+        console.warn('⚠️ Could not extract storage path from URL:', imageUrl);
+        return;
+      }
+      
+      const storagePath = decodeURIComponent(pathMatch[1]);
+      console.log('🗑️ Deleting temporary preview:', storagePath);
+      
+      const storageRef = ref(storage, storagePath);
+      await deleteObject(storageRef);
+      
+      console.log('✅ Temporary preview deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting temporary preview:', error);
+      // Don't throw error - we don't want to break the generation flow
+    }
+  }
 }
 
 export const imageService = new ImageService();
+
+// Cloudinary CDN Service for Figma Plugin Images
+export class CloudinaryService {
+  private static instance: CloudinaryService;
+  private cloudName: string;
+
+  private constructor() {
+    this.cloudName = (window as any).CLOUDINARY_CLOUD_NAME || 'diz76yqru';
+    console.log('🔧 Cloudinary Configuration:');
+    console.log('  Cloud Name:', this.cloudName);
+  }
+
+  public static getInstance(): CloudinaryService {
+    if (!CloudinaryService.instance) {
+      CloudinaryService.instance = new CloudinaryService();
+    }
+    return CloudinaryService.instance;
+  }
+
+  /**
+   * Get pre-uploaded Cloudinary images
+   */
+  public getCloudinaryImages(): PluginImage[] {
+    return [
+      {
+        id: 'cloudinary-1',
+        name: 'Lotus Leaves',
+        url: 'https://res.cloudinary.com/diz76yqru/image/upload/f_png/v1754562296/plugin-image-1_buf5es.webp',
+        description: 'Beautiful lotus leaves with water droplets',
+        category: 'nature',
+        tags: ['nature', 'water', 'leaves']
+      },
+      {
+        id: 'cloudinary-2',
+        name: 'Delicate Flowers',
+        url: 'https://res.cloudinary.com/diz76yqru/image/upload/f_png/v1754562296/plugin-image-2_dtntff.webp',
+        description: 'Soft-focus light-colored flowers',
+        category: 'nature',
+        tags: ['nature', 'flowers', 'soft']
+      },
+      {
+        id: 'cloudinary-3',
+        name: 'Protea Bloom',
+        url: 'https://res.cloudinary.com/diz76yqru/image/upload/f_png/v1754562296/plugin-image-3_khxuur.webp',
+        description: 'Close-up of vibrant orange-yellow petals',
+        category: 'nature',
+        tags: ['nature', 'flowers', 'vibrant']
+      },
+      {
+        id: 'cloudinary-4',
+        name: 'Moss and Wildflowers',
+        url: 'https://res.cloudinary.com/diz76yqru/image/upload/f_png/v1754562296/plugin-image-4_jd3nrw.webp',
+        description: 'Dark wood with green moss and yellow flowers',
+        category: 'nature',
+        tags: ['nature', 'moss', 'wood']
+      }
+    ];
+  }
+
+  /**
+   * Get optimized image URL
+   */
+  public getOptimizedUrl(publicId: string, options: {
+    width?: number;
+    height?: number;
+    quality?: number;
+    format?: 'auto' | 'webp' | 'jpg' | 'png';
+  } = {}): string {
+    const { width, height, quality = 80, format = 'auto' } = options;
+    
+    let url = `https://res.cloudinary.com/${this.cloudName}/image/upload`;
+    
+    // Add transformations
+    const transformations = [];
+    if (width) transformations.push(`w_${width}`);
+    if (height) transformations.push(`h_${height}`);
+    transformations.push(`q_${quality}`, `f_${format}`);
+    
+    if (transformations.length > 0) {
+      url += `/${transformations.join(',')}`;
+    }
+    
+    return `${url}/${publicId}`;
+  }
+
+
+}
+
+// Export singleton
+export const cloudinaryService = CloudinaryService.getInstance();

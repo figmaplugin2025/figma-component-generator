@@ -711,13 +711,13 @@ NewsCard Component
 
 .categories__card-content-box svg {
   display: flex;
-  width: 149px;
-  padding: 8px;
+  width: 74.5px;
+  padding: 4px;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   position: absolute;
-  right: -27px;
-  bottom: -20.4px;
+  right: -13.5px;
+  bottom: -10.2px;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -861,17 +861,20 @@ NewsCard Component
   background: #FFF;
   position: relative;
   overflow: hidden;
+  background-color: #f8f9fa;
 }
 
 .component__card-image {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Changed from cover to contain to show full image */
-  border-radius: 14px;
-  background-color: #f8f9fa; /* Light background for better contrast */
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-width: 200px;
+ height: 100%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 /* Component Detail Page Styles */
@@ -903,7 +906,7 @@ NewsCard Component
 /* Component Details Image Section */
 .component__details--image {
   display: flex;
-  height: 208px;
+  min-height: 208px;
   padding: 3px;
   align-items: flex-start;
   gap: 10px;
@@ -917,22 +920,21 @@ NewsCard Component
   display: flex;
   padding: 12px;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: center;
   gap: 10px;
   flex: 1 0 0;
   align-self: stretch;
   border-radius: 14px;
   background: #F9F9F9;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .component__details--image-img {
-  width: 100%;
-  height: 100%;
+  width: 50%;
+  max-width: 250px;
+  height: auto;
   object-fit: contain; /* Changed from cover to contain to show full image */
-  border-radius: 8px;
-  display: block;
-  background-color: #f8f9fa; /* Light background for better contrast */
 }
 
 /* Component Details Info Section */

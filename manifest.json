@@ -24,7 +24,9 @@
       "https://fastly.picsum.photos",
       "https://test-c3900.firebasestorage.app",
       "https://api.figma.com",
-      "https://figma-alpha-api.s3.us-west-2.amazonaws.com"
+      "https://figma-alpha-api.s3.us-west-2.amazonaws.com",
+      "https://api.cloudinary.com",
+      "https://res.cloudinary.com"
     ]
   }
 }

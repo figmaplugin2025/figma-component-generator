@@ -79,6 +79,42 @@ figma.ui.onmessage = async (msg) => {
       });
     }
   }
+  
+
+  
+  if (msg.type === 'generate-temporary-preview') {
+    try {
+      const { componentId, figmaComponentKey, customImageUrl } = msg;
+      
+      const component = await figma.importComponentByKeyAsync(figmaComponentKey);
+      const instance = component.createInstance();
+      const detachedNode = instance.detachInstance();
+      
+      await replaceImageInPlaceholderFrame(detachedNode, customImageUrl);
+      
+      const imageBytes = await detachedNode.exportAsync({
+        format: 'PNG',
+        constraint: { type: 'SCALE', value: 1.5 }
+      });
+      
+      const base64 = figma.base64Encode(imageBytes);
+      const dataUrl = `data:image/png;base64,${base64}`;
+      
+      figma.ui.postMessage({
+        type: 'temporary-preview-generated',
+        componentId: componentId,
+        previewDataUrl: dataUrl
+      });
+      
+    } catch (error) {
+      console.error('❌ Failed to generate temporary preview:', error);
+      figma.ui.postMessage({
+        type: 'temporary-preview-error',
+        componentId: msg.componentId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
 };
 
 // NEW: Function to replace image fills within a component
@@ -142,153 +178,204 @@ async function replaceImageInPlaceholderFrame(node: SceneNode, imageUrl: string)
     console.log('🎯 Targeting .placeholder-image frame specifically...');
     console.log('🖼️ Custom image URL:', imageUrl);
     
-    // Try to fetch the image with different approaches
+    // Check if this is a Firebase Storage URL and handle CORS
     let imageData: ArrayBuffer;
     
     try {
-      // First try: direct fetch
-      const response = await fetch(imageUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
-      }
-      imageData = await response.arrayBuffer();
-    } catch (fetchError) {
-      console.warn('⚠️ Direct fetch failed, trying alternative approach:', fetchError);
-      
-      // Try alternative: use XMLHttpRequest with different headers
-      try {
-        console.log('🔄 Trying XMLHttpRequest approach...');
-        imageData = await new Promise<ArrayBuffer>((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('GET', imageUrl, true);
-          xhr.responseType = 'arraybuffer';
-          xhr.onload = () => {
-            if (xhr.status === 200) {
-              resolve(xhr.response);
-            } else {
-              reject(new Error(`XHR failed: ${xhr.status}`));
-            }
-          };
-          xhr.onerror = () => reject(new Error('XHR error'));
-          xhr.send();
+      // For Firebase Storage URLs, we need to handle CORS differently
+      if (imageUrl.includes('firebasestorage.googleapis.com')) {
+        console.log('🔥 Detected Firebase Storage URL, using special handling...');
+        
+        // Try to fetch with no-cors mode first
+        const response = await fetch(imageUrl, {
+          mode: 'no-cors'
         });
-        console.log('✅ XMLHttpRequest approach succeeded');
-      } catch (xhrError) {
-        console.warn('⚠️ XMLHttpRequest also failed:', xhrError);
         
-        // Final fallback: create a colored rectangle as placeholder
-        console.log('🔄 Creating fallback colored rectangle...');
+        // If no-cors doesn't work, we'll use a fallback approach
+        if (!response.ok && response.type !== 'opaque') {
+          throw new Error('Firebase Storage CORS blocked');
+        }
         
-        // Recursive function to find and replace .placeholder-image frame
-        async function findAndReplacePlaceholder(node: SceneNode): Promise<boolean> {
-          // Check if this is the .placeholder-image frame
-          if (node.name === '.placeholder-image') {
-            console.log(`🎯 Found .placeholder-image frame: "${node.name}"`);
-            
-            // Handle different node types that can have fills
-            if (node.type === 'RECTANGLE' || node.type === 'FRAME' || node.type === 'INSTANCE') {
-              if ('fills' in node && node.fills && Array.isArray(node.fills)) {
-                const fills = node.fills as Paint[];
-                
-                // Replace all fills with a colored placeholder that indicates custom image
-                for (let i = 0; i < fills.length; i++) {
-                  fills[i] = {
-                    type: 'SOLID',
-                    color: { r: 0.2, g: 0.6, b: 0.9 } // Blue color to indicate custom image
-                  };
-                }
-                console.log(`✅ Applied colored placeholder to .placeholder-image frame: "${node.name}"`);
-                return true;
-              }
-            }
-            
-            // If it's a group or other container, process its children
-            if ('children' in node && node.children) {
-              for (const child of node.children) {
-                const found = await findAndReplacePlaceholder(child);
-                if (found) return true;
-              }
+        // For no-cors responses, we can't access the data directly
+        // So we'll create a visual indicator instead
+        console.log('🔄 Using visual indicator for Firebase Storage image...');
+        await createVisualIndicator(node, imageUrl);
+        return true;
+      } else {
+        // For other URLs (like CDN), try normal fetch
+        const response = await fetch(imageUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        imageData = await response.arrayBuffer();
+      }
+    } catch (fetchError) {
+      console.warn('⚠️ Fetch failed, using visual indicator:', fetchError);
+      
+      // Create a visual indicator instead of trying to load the image
+      await createVisualIndicator(node, imageUrl);
+      return true;
+    }
+    
+    // If we have image data, load it into Figma
+    if (imageData) {
+      const uint8Array = new Uint8Array(imageData);
+      const image = await figma.createImage(uint8Array);
+      
+      // Recursive function to find and replace image in .placeholder-image frame
+      async function findAndReplacePlaceholder(node: SceneNode): Promise<boolean> {
+        // Debug: Log all frame names we encounter
+        console.log(`🔍 Checking node: "${node.name}" (type: ${node.type})`);
+        
+        // Check if this is the .placeholder-image frame (exact match or contains placeholder)
+        // Also check for specific frame names like "Frame 1171277153"
+        if (node.name === '.placeholder-image' || 
+            node.name.includes('placeholder-image') || 
+            node.name.includes('placeholder') ||
+            node.name === 'Frame 1171277153' ||
+            node.name.includes('Frame 1171277153')) {
+          console.log(`🎯 Found target frame: "${node.name}"`);
+          
+          // Handle different node types that can have fills
+          if (node.type === 'RECTANGLE' || node.type === 'FRAME' || node.type === 'INSTANCE') {
+            if ('fills' in node && node.fills && Array.isArray(node.fills)) {
+              // Create a new fills array instead of modifying the existing one
+              const newFills: Paint[] = [{
+                type: 'IMAGE',
+                imageHash: image.hash,
+                scaleMode: 'FILL'
+              }];
+              
+              // Assign the new fills array to the node
+              (node as any).fills = newFills;
+              console.log(`✅ Applied custom image to .placeholder-image frame: "${node.name}"`);
+              return true;
             }
           }
           
-          // Recursively search children
+          // If it's a group or other container, process its children
           if ('children' in node && node.children) {
             for (const child of node.children) {
               const found = await findAndReplacePlaceholder(child);
               if (found) return true;
             }
           }
-          
-          return false;
         }
         
-        const found = await findAndReplacePlaceholder(node);
-        if (!found) {
-          console.log(`❌ .placeholder-image frame not found in component`);
-        }
-        return found;
-      }
-    }
-    
-    const uint8Array = new Uint8Array(imageData);
-    
-    // Load the image into Figma
-    const image = await figma.createImage(uint8Array);
-    
-    // Recursive function to find and replace image in .placeholder-image frame
-    async function findAndReplacePlaceholder(node: SceneNode): Promise<boolean> {
-      // Check if this is the .placeholder-image frame
-      if (node.name === '.placeholder-image') {
-        console.log(`🎯 Found .placeholder-image frame: "${node.name}"`);
-        
-        // Handle different node types that can have fills
-        if (node.type === 'RECTANGLE' || node.type === 'FRAME' || node.type === 'INSTANCE') {
-          if ('fills' in node && node.fills && Array.isArray(node.fills)) {
-            const fills = node.fills as Paint[];
-            
-            // Replace all fills with the new image
-            for (let i = 0; i < fills.length; i++) {
-              fills[i] = {
-                type: 'IMAGE',
-                imageHash: image.hash,
-                scaleMode: 'FILL'
-              };
-            }
-            console.log(`✅ Applied image to .placeholder-image frame: "${node.name}"`);
-            return true;
-          }
-        }
-        
-        // If it's a group or other container, process its children
+        // Recursively search children
         if ('children' in node && node.children) {
           for (const child of node.children) {
             const found = await findAndReplacePlaceholder(child);
             if (found) return true;
           }
         }
+        
+        return false;
       }
       
-      // Recursively search children
+      const found = await findAndReplacePlaceholder(node);
+      if (!found) {
+        console.log(`❌ .placeholder-image frame not found in component`);
+        
+        // Fallback: Try to find any suitable frame for image replacement
+        console.log('🔄 Trying fallback: searching for any suitable frame...');
+        const fallbackFound = await findAndReplaceInAnyFrame(node, image);
+        if (fallbackFound) {
+          console.log('✅ Found fallback frame and applied image');
+          return true;
+        }
+      }
+      return found;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error in replaceImageInPlaceholderFrame:', error);
+    return false;
+  }
+}
+
+// Fallback function to find any suitable frame for image replacement
+async function findAndReplaceInAnyFrame(node: SceneNode, image: Image): Promise<boolean> {
+  // Look for any rectangle or frame that could be an image placeholder
+  if (node.type === 'RECTANGLE' || node.type === 'FRAME') {
+    if ('fills' in node && node.fills && Array.isArray(node.fills)) {
+      // Create a new fills array instead of modifying the existing one
+      const newFills: Paint[] = [{
+        type: 'IMAGE',
+        imageHash: image.hash,
+        scaleMode: 'FILL'
+      }];
+      
+      // Assign the new fills array to the node
+      (node as any).fills = newFills;
+      console.log(`✅ Applied custom image to fallback frame: "${node.name}"`);
+      return true;
+    }
+  }
+  
+  // Recursively search children
+  if ('children' in node && node.children) {
+    for (const child of node.children) {
+      const found = await findAndReplaceInAnyFrame(child, image);
+      if (found) return true;
+    }
+  }
+  
+  return false;
+}
+
+// Helper function to create a visual indicator for custom images
+async function createVisualIndicator(node: SceneNode, imageUrl: string) {
+  console.log('🎨 Creating visual indicator for custom image...');
+  
+  async function findAndReplacePlaceholder(node: SceneNode): Promise<boolean> {
+    // Check if this is the .placeholder-image frame
+    if (node.name === '.placeholder-image') {
+      console.log(`🎯 Found .placeholder-image frame: "${node.name}"`);
+      
+      // Handle different node types that can have fills
+      if (node.type === 'RECTANGLE' || node.type === 'FRAME' || node.type === 'INSTANCE') {
+        if ('fills' in node && node.fills && Array.isArray(node.fills)) {
+          const fills = node.fills as Paint[];
+          
+          // Replace all fills with a colored placeholder that indicates custom image
+          for (let i = 0; i < fills.length; i++) {
+            fills[i] = {
+              type: 'SOLID',
+              color: { r: 0.2, g: 0.6, b: 0.9 } // Blue color to indicate custom image
+            };
+          }
+          console.log(`✅ Applied visual indicator to .placeholder-image frame: "${node.name}"`);
+          return true;
+        }
+      }
+      
+      // If it's a group or other container, process its children
       if ('children' in node && node.children) {
         for (const child of node.children) {
           const found = await findAndReplacePlaceholder(child);
           if (found) return true;
         }
       }
-      
-      return false;
     }
     
-    const found = await findAndReplacePlaceholder(node);
-    if (!found) {
-      console.log(`❌ .placeholder-image frame not found in component`);
+    // Recursively search children
+    if ('children' in node && node.children) {
+      for (const child of node.children) {
+        const found = await findAndReplacePlaceholder(child);
+        if (found) return true;
+      }
     }
-    return found;
     
-  } catch (error) {
-    console.error('❌ Failed to load image from URL:', error);
-    throw error;
+    return false;
   }
+  
+  const found = await findAndReplacePlaceholder(node);
+  if (!found) {
+    console.log(`❌ .placeholder-image frame not found in component`);
+  }
+  return found;
 }
 
 // NEW: Function to create master component with variants

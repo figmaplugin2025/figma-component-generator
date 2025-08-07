@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BackSection from './BackSection';
 import ComponentDetailsActions from './ComponentDetailsActions';
 import CustomModuleModal from './CustomModuleModal';
 import CustomModuleChoice from './CustomModuleChoice';
 import { getDefaultComponent, groupComponentsByMaster, selectComponentVariant, ComponentPreferences } from '../services/componentService';
 import { Timestamp } from 'firebase/firestore';
-// import UserLoggedInSection from './UserLoggedInSection'; // Commented out after removal
+
 
 interface ComponentDetailData {
   id: string;
@@ -53,46 +53,210 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
   onBack,
   onGenerate
 }) => {
+
+  
   const [showCustomModuleModal, setShowCustomModuleModal] = useState(false);
   const [showCustomModuleChoice, setShowCustomModuleChoice] = useState(false);
   const [customizationMode, setCustomizationMode] = useState<'single' | 'set' | null>(null);
   const [customizationCount, setCustomizationCount] = useState(0);
-  // Get the correct image for this specific variant
-  const getVariantImage = () => {
-    // If this is a specific variant (title contains the full variant path)
-    if (data.title && data.title.includes('/')) {
-      // This is already a specific variant, use its image
-      return data.image;
-    }
-    
-    // If this is a master component, find the specific variant image
-    if (data.variants && data.variants.length > 0) {
-      // Look for the .dark/.large variant
-      const darkLargeVariant = data.variants.find(variant => 
-        variant.name.includes('/dark/') && variant.name.includes('/large')
-      );
-      if (darkLargeVariant) {
-        return darkLargeVariant.imageUrl;
+  
+  // Convert Cloudinary WebP URLs to PNG format for Figma compatibility
+  const convertToPngIfCloudinary = (url: string): string => {
+    if (url.includes('res.cloudinary.com') && url.includes('.webp')) {
+      // Check if f_png transformation is already applied
+      if (url.includes('/f_png/')) {
+        return url; // Already converted
       }
-      
-      // Fallback to first variant
-      return data.variants[0].imageUrl;
+      return url.replace('/upload/', '/upload/f_png/');
     }
-    
-    // Fallback to master component image
-    return data.image;
+    return url;
   };
 
-  const [currentImage, setCurrentImage] = useState(getVariantImage());
+  // Get the correct image for this specific variant
+  const getVariantImage = () => {
+    let imageUrl = '';
+    
+    if (data.variants && data.variants.length > 0) {
+      // Check if user has selected a specific style
+      const selectedStyle = customizationPreferences?.style?.toLowerCase();
+      const selectedSize = customizationPreferences?.size?.toLowerCase() || 'large';
+      
+      if (selectedStyle) {
+        // Find the variant that matches the user's selection
+        const selectedVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes(selectedStyle) && name.includes(selectedSize);
+        });
+        
+        if (selectedVariant) {
+          imageUrl = selectedVariant.imageUrl;
+        } else {
+          // Fallback to dark/large variant if selected variant not found
+          const darkLargeVariant = data.variants.find(variant => {
+            const name = variant.name.toLowerCase();
+            return name.includes('dark') && name.includes('large');
+          });
+          
+          if (darkLargeVariant) {
+            imageUrl = darkLargeVariant.imageUrl;
+          } else {
+            imageUrl = data.variants[0].imageUrl;
+          }
+        }
+      } else {
+        // Default to dark/large variant if no style selected
+        const darkLargeVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes('dark') && name.includes('large');
+        });
+        
+        if (darkLargeVariant) {
+          imageUrl = darkLargeVariant.imageUrl;
+        } else {
+          imageUrl = data.variants[0].imageUrl;
+        }
+      }
+    } else {
+      imageUrl = data.image;
+    }
+    
+    return convertToPngIfCloudinary(imageUrl);
+  };
+
+  const [currentImage, setCurrentImage] = useState(data.image || '');
+  const [temporaryPreviewUrl, setTemporaryPreviewUrl] = useState<string>(''); // For temporary preview
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false); // Track if we're generating preview
   const [customizationPreferences, setCustomizationPreferences] = useState<Record<string, string>>({});
   const [hasCustomizations, setHasCustomizations] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'warning' | 'error', message: string } | null>(null);
+
+  // Update current image after component mounts to avoid initialization issues
+  useEffect(() => {
+    setCurrentImage(getVariantImage());
+  }, []);
+
+
+  // Create temporary preview image for immediate visual feedback
+  const createTemporaryPreview = async (customImageUrl: string) => {
+    try {
+      setIsGeneratingPreview(true);
+      
+      // Generate the full component preview with custom image inserted
+      // This creates the component card with the custom image in the .placeholder-image frame
+      if (window.parent && window.parent !== window) {
+        const previewComponentId = `temp-preview-${data.id}-${Date.now()}`;
+        
+        // Send message to code.ts to generate the full component preview
+        window.parent.postMessage({
+          pluginMessage: {
+            type: 'generate-temporary-preview',
+            componentId: previewComponentId,
+            figmaFileId: data.figmaFileId,
+            figmaComponentKey: data.figmaComponentKey,
+            title: data.title,
+            specs: data.specs,
+            customImageUrl: customImageUrl
+          }
+        }, '*');
+        
+        console.log('⏳ Generating component preview...');
+        
+        // Listen for the response from code.ts
+        const handleMessage = async (event: MessageEvent) => {
+          if (event.data.pluginMessage?.type === 'temporary-preview-generated') {
+            const { componentId, previewDataUrl } = event.data.pluginMessage;
+            
+            if (componentId === previewComponentId) {
+              try {
+                const { imageService } = await import('../services/imageService');
+                
+                const response = await fetch(previewDataUrl);
+                const blob = await response.blob();
+                
+                const file = new File([blob], `temp-preview-${data.id}-${Date.now()}.png`, {
+                  type: 'image/png'
+                });
+                
+                const uploadResult = await imageService.uploadGeneratedComponentPreview(file, data.id);
+                setTemporaryPreviewUrl(uploadResult.url);
+                console.log('✅ Component preview uploaded');
+                
+              } catch (error) {
+                console.error('❌ Upload failed, using fallback');
+                const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+                setTemporaryPreviewUrl(tempPreviewUrl);
+              }
+              
+              // Clear generating state
+              setIsGeneratingPreview(false);
+              
+              // Remove the event listener
+              window.removeEventListener('message', handleMessage);
+            }
+          } else if (event.data.pluginMessage?.type === 'temporary-preview-error') {
+            const { componentId, error } = event.data.pluginMessage;
+            
+            if (componentId === previewComponentId) {
+              console.error('❌ Preview generation failed');
+              const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+              setTemporaryPreviewUrl(tempPreviewUrl);
+              setIsGeneratingPreview(false);
+              window.removeEventListener('message', handleMessage);
+            }
+          }
+        };
+        
+        // Add event listener for the response
+        window.addEventListener('message', handleMessage);
+        
+        // Set a timeout as fallback
+        setTimeout(() => {
+          if (isGeneratingPreview) {
+            const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+            setTemporaryPreviewUrl(tempPreviewUrl);
+            setIsGeneratingPreview(false);
+          }
+          window.removeEventListener('message', handleMessage);
+        }, 30000);
+        
+      } else {
+        // Fallback if no parent window
+        const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+        setTemporaryPreviewUrl(tempPreviewUrl);
+        console.log('🔄 Fallback to Cloudinary URL:', tempPreviewUrl);
+      }
+      
+    } catch (error) {
+      console.error('❌ Failed to create temporary preview:', error);
+      // Fallback to using the Cloudinary URL directly
+      const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+      setTemporaryPreviewUrl(tempPreviewUrl);
+      console.log('🔄 Fallback to Cloudinary URL:', tempPreviewUrl);
+    }
+  };
+
+  // Clear temporary preview after generation
+  const clearTemporaryPreview = async () => {
+    // Delete the temporary preview from Firebase Storage if it exists
+    if (temporaryPreviewUrl && temporaryPreviewUrl.includes('firebasestorage.googleapis.com')) {
+      try {
+        const { imageService } = await import('../services/imageService');
+        await imageService.deleteTemporaryPreview(temporaryPreviewUrl);
+      } catch (error) {
+        console.error('❌ Failed to delete temporary preview from Firebase:', error);
+      }
+    }
+    
+    // Clear the local state
+    setTemporaryPreviewUrl('');
+  };
+
+
 
   // Get available components for variant selection
   const getAvailableComponents = () => {
     const components = [];
     
-    // Add the current component
     if (data) {
       components.push({
         id: data.id,
@@ -100,7 +264,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         imageUrl: data.image,
         figmaComponentKey: data.figmaComponentKey,
         specs: data.specs,
-        // Fallbacks for required fields
         description: data.description || '',
         volts: data.volts || 0,
         maxVolts: data.maxVolts || 0,
@@ -118,7 +281,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
       });
     }
     
-    // Add variants if available
     if (data.variants && data.variants.length > 0) {
       data.variants.forEach(variant => {
         components.push({
@@ -127,7 +289,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
           imageUrl: variant.imageUrl,
           figmaComponentKey: variant.figmaComponentKey,
           specs: variant.specs as any,
-          // Fallbacks for required fields
           description: '',
           volts: 0,
           maxVolts: 0,
@@ -170,14 +331,15 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
 
   const handleReset = () => {
     setCustomizationCount(0);
-    setCurrentImage(getVariantImage()); // Reset image to variant image
+    setCurrentImage(getVariantImage());
+
+    setTemporaryPreviewUrl(''); // Clear temporary preview
     setCustomizationPreferences({});
     setHasCustomizations(false);
     console.log('🔄 Customizations reset to 0');
   };
 
-  // Enhanced Generate logic: generate only the default component (first in group)
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const availableComponents = getAvailableComponents();
     const grouped = groupComponentsByMaster(availableComponents);
     const masterNames = Object.keys(grouped);
@@ -189,9 +351,7 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
       const style = (customizationPreferences['style'] || 'Dark').toLowerCase() as 'dark' | 'light';
       const image = customizationPreferences['image'] || undefined;
       
-      // Get the custom image URL if an image was selected
       if (image && image !== 'Default') {
-        // Get the selected image URL from the preferences
         customImageUrl = customizationPreferences['selectedImageUrl'];
       }
       
@@ -201,7 +361,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
     }
     
     if (window.parent && window.parent !== window && selectedComponent) {
-      // Show generating notification
       setNotification({
         type: 'success',
         message: customImageUrl ? 
@@ -221,10 +380,12 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         }
       }, '*');
       
-      // Clear notification after 3 seconds
       setTimeout(() => {
         setNotification(null);
       }, 3000);
+      
+      // Clear temporary preview after generation (including Firebase cleanup)
+      await clearTemporaryPreview();
       
       setCustomizationPreferences({});
       setHasCustomizations(false);
@@ -232,14 +393,12 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
     }
   };
 
-  // Debug: Log the data being received
+  // Debug logging
   console.log('🔍 ComponentCardDetailedView received data:', data);
   console.log('🖼️ Image URL:', data.image);
   console.log('🖼️ Image URL type:', typeof data.image);
   console.log('🖼️ Image URL length:', data.image?.length);
   console.log('🖼️ Is image URL empty?', !data.image || data.image.trim() === '');
-  
-  // Debug: Log master component fields
   console.log('🔍 isMasterComponent:', data.isMasterComponent);
   console.log('🔍 variants:', data.variants);
   console.log('🔍 variantCount:', data.variantCount);
@@ -249,9 +408,14 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
 
   return (
     <div className="component-detail-page">
-      {/* Removed UserLoggedInSection from here */}
-
-      {/* Notification */}
+      {/* Debug fallback - show if data is missing */}
+      {!data && (
+        <div style={{ padding: '20px', textAlign: 'center', color: 'red' }}>
+          <h3>⚠️ No component data received</h3>
+          <p>ComponentCardDetailedView is not receiving data properly.</p>
+        </div>
+      )}
+      
       {notification && (
         <div style={{
           position: 'fixed',
@@ -273,69 +437,125 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         </div>
       )}
 
-      {/* Back Navigation Section - using existing BackSection */}
       <BackSection onBack={onBack} />
 
-      {/* Component Details Image Section */}
+      {/* Component Details Image Section - Generated Preview */}
       <div className="component__details--image">
         <div className="component__details--image-container" style={{ position: 'relative' }}>
-          <img 
-            src={currentImage} 
-            alt={data.title}
-            className="component__details--image-img"
-            onLoad={(e) => {
-              console.log('✅ Component image loaded successfully:', currentImage);
-              console.log('✅ Image element src:', e.currentTarget.src);
-              console.log('✅ Image natural dimensions:', e.currentTarget.naturalWidth, 'x', e.currentTarget.naturalHeight);
-            }}
-            onError={(e) => {
-              console.error('❌ Failed to load component image:', currentImage);
-              console.error('❌ Image element src:', e.currentTarget.src);
-              console.error('❌ Error details:', e);
-              
-              // Test if we can load the URL directly
-              console.log('🧪 Testing direct URL access...');
-              fetch(currentImage)
-                .then(response => {
-                  console.log('🧪 Fetch response status:', response.status);
-                  console.log('🧪 Fetch response headers:', response.headers);
-                })
-                .catch(fetchError => {
-                  console.error('🧪 Fetch failed:', fetchError);
-                });
-              
-              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjEyMCIgdmlld0JveD0iMCAwIDIwMCAxMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyMDAiIGhlaWdodD0iMTIwIiBmaWxsPSIjRjVGNUY1Ii8+Cjx0ZXh0IHg9IjEwMCIgeT0iNjAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIwLjNlbSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5Ij5JbWFnZSBub3QgZm91bmQ8L3RleHQ+Cjwvc3ZnPg==';
-            }}
-          />
-          
-          {/* Custom Image Indicator Overlay */}
-          {customizationPreferences.selectedImageUrl && (
-            <div className="custom-image-indicator" style={{
-              position: 'absolute',
-              top: '10px',
-              right: '10px',
-              zIndex: 10
-            }}>
-              <div className="custom-image-badge" style={{
-                background: 'rgba(0, 0, 0, 0.8)',
-                color: 'white',
-                padding: '8px 12px',
-                borderRadius: '20px',
-                fontSize: '12px',
+          {(() => {
+            // Show temporary preview if available, otherwise show current image
+            const displayImageUrl = temporaryPreviewUrl || currentImage;
+            const isTemporaryPreview = temporaryPreviewUrl !== '';
+            
+            return displayImageUrl && isTemporaryPreview ? (
+              // Show temporary preview image directly
+              <div style={{ 
+                position: 'relative',
                 display: 'flex',
+                justifyContent: 'center',
                 alignItems: 'center',
-                gap: '6px',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                width: '100%'
               }}>
-                <span className="custom-image-icon">🖼️</span>
-                <span className="custom-image-text">Custom Image Selected</span>
+                <img 
+                  src={displayImageUrl} 
+                  alt={`${data.title} Preview`}
+                  style={{
+                    width: '50%',
+                    maxWidth: '250px',
+                    objectFit: 'contain'
+                  }}
+                  onLoad={(e) => {
+                    console.log('✅ Temporary preview image loaded successfully:', displayImageUrl);
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Failed to load temporary preview image:', displayImageUrl);
+                    // Fallback to current image
+                    setTemporaryPreviewUrl('');
+                  }}
+                />
+                
+                {/* Custom Image Indicator Overlay */}
+                {customizationPreferences.selectedImageUrl && (
+                  <div className="custom-image-indicator" style={{
+                    position: 'absolute',
+                    top: '10px',
+                    right: '10px',
+                    zIndex: 10
+                  }}>
+                    <div className="custom-image-badge" style={{
+                      background: 'rgba(0, 0, 0, 0.8)',
+                      color: 'white',
+                      padding: '8px 12px',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)'
+                    }}>
+                      <span className="custom-image-icon">🖼️</span>
+                      <span className="custom-image-text">Temporary Preview</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ) : displayImageUrl ? (
+              // Show regular preview image directly
+              <div style={{ 
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%'
+              }}>
+                <img 
+                  src={displayImageUrl} 
+                  alt={`${data.title} Preview`}
+                  style={{
+                    width: '50%',
+                    maxWidth: '250px',
+                    objectFit: 'contain'
+                  }}
+                />
+              </div>
+            ) : (
+              // Show current image as fallback
+              <div style={{ 
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%'
+              }}>
+                <img 
+                  src={currentImage} 
+                  alt={data.title}
+                  style={{
+                    width: '50%',
+                    maxWidth: '250px',
+                    objectFit: 'contain'
+                  }}
+                />
+              </div>
+            );
+          })()}
+          
+          {/* Component Variant Label */}
+          <div style={{
+            position: 'absolute',
+            top: '-8px',
+            left: '16px',
+            backgroundColor: '#FF5C0A',
+            color: 'white',
+            padding: '4px 12px',
+            borderRadius: '12px',
+            fontSize: '12px',
+            fontWeight: '500',
+            zIndex: 5
+          }}>
+            {data.title.includes('/') ? data.title : `${data.title}/dark/large`}
+          </div>
         </div>
       </div>
 
-      {/* Component Details Info Section */}
       <div className="component__details--info">
         <div className="component__details--info-banner">
           <span className="component__details--info-volts">{data.volts} volts</span>
@@ -346,9 +566,7 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         </p>
       </div>
 
-      {/* Component Details Specs Section */}
       <div className="component__details--specs">
-        {/* Four identical spec boxes */}
         {[...Array(4)].map((_, index) => (
           <div key={index} className="component__details--specs-box">
             <div className="component__details--specs-box-container">
@@ -370,7 +588,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         ))}
       </div>
 
-      {/* Component Actions Section */}
       <ComponentDetailsActions
         onGenerate={handleGenerate}
         onCustomize={handleCustomize}
@@ -388,7 +605,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         onReset={handleReset}
       />
 
-      {/* CustomModuleChoice Modal */}
       {showCustomModuleChoice && (
         <div className="modal-overlay">
           <CustomModuleChoice
@@ -398,17 +614,21 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         </div>
       )}
 
-      {/* CustomModule Modal */}
       {showCustomModuleModal && (
         <CustomModuleModal 
           isVisible={showCustomModuleModal}
           onClose={handleCustomModuleClose}
           customizationMode={customizationMode}
           availableComponents={getAvailableComponents()}
-          componentId={data.id} // Add componentId for database updates
+          componentId={data.id}
           onApplyChanges={async prefs => {
             setCustomizationPreferences(prefs);
             setHasCustomizations(true);
+            
+            // Update current image based on new preferences
+            const newImage = getVariantImage();
+            setCurrentImage(newImage);
+            
             let count = 0;
             
             if (customizationMode === 'single') {
@@ -425,7 +645,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                 prefs[option] !== defaults[option as keyof typeof defaults]
               ).length;
               
-              // Update image based on style selection
               if (prefs.style && prefs.style !== defaults.style) {
                 const availableComponents = getAvailableComponents();
                 const grouped = groupComponentsByMaster(availableComponents);
@@ -435,41 +654,26 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                   const style = prefs.style.toLowerCase() as 'dark' | 'light';
                   const matchingComponent = selectComponentVariant(grouped[masterNames[0]], { size, style });
                   if (matchingComponent) {
-                    setCurrentImage(matchingComponent.imageUrl);
-                    console.log('🎨 Updated image to match style:', prefs.style, '->', matchingComponent.imageUrl);
-                  }
-                }
-              }
-              
-              // NEW: Handle custom image selection for live preview
-              if (prefs.selectedImageUrl && prefs.selectedImageUrl !== '') {
-                try {
-                  console.log('🖼️ Live preview: Showing original component with custom image indicator');
-                  
-                  // For live preview, show the original component image
-                  // The custom image will be placed inside the .placeholder-image frame when generated
-                  setCurrentImage(getVariantImage());
-                  console.log('🖼️ Live preview: Updated to original component image');
-                  
-                  // Update the database with the custom image URL for persistence
-                  if (data.id) {
-                    const { componentService } = await import('../services/componentService');
-                    await componentService.updateComponent(data.id, { 
-                      imageUrl: getVariantImage() // Keep original component image
-                    });
+                    // Always update to the correct variant first
+                    setCurrentImage(convertToPngIfCloudinary(matchingComponent.imageUrl));
                     
-                    console.log('✅ Custom image URL saved to database');
+                    // If there's a custom image, apply it on top of the correct variant
+                    if (prefs.selectedImageUrl && prefs.selectedImageUrl !== '') {
+                      try {
+                        console.log('🖼️ Live preview: Creating temporary preview with custom image on correct variant');
+                        console.log('🖼️ Custom image URL:', prefs.selectedImageUrl);
+                        
+                        // Create temporary preview with custom image on the correct variant
+                        await createTemporaryPreview(prefs.selectedImageUrl);
+                        
+                        console.log('🖼️ Live preview: Temporary preview created with custom image on correct variant');
+                        
+                      } catch (error) {
+                        console.error('❌ Failed to create temporary preview:', error);
+                      }
+                    }
                   }
-                  
-                } catch (error) {
-                  console.error('❌ Failed to update live preview:', error);
-                  // Fallback to showing just the custom image
-                  setCurrentImage(prefs.selectedImageUrl);
                 }
-              } else if (prefs.image && prefs.image !== defaults.image) {
-                // Handle other image selections (not custom uploaded images)
-                setCurrentImage(prefs.image);
-                console.log('🖼️ Updated image to selection:', prefs.image);
               }
             } else if (customizationMode === 'set') {
               const defaults = {
@@ -484,18 +688,18 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                 prefs[option] !== defaults[option as keyof typeof defaults]
               ).length;
               
-              // Update image based on style selection for set mode
               if (prefs.style && prefs.style !== defaults.style) {
                 const availableComponents = getAvailableComponents();
                 const grouped = groupComponentsByMaster(availableComponents);
                 const masterNames = Object.keys(grouped);
                 if (masterNames.length > 0) {
                   const style = prefs.style.toLowerCase() as 'dark' | 'light';
-                  // For set mode, use default size (large) when style changes
                   const matchingComponent = selectComponentVariant(grouped[masterNames[0]], { size: 'large', style });
                   if (matchingComponent) {
-                    setCurrentImage(matchingComponent.imageUrl);
-                    console.log('🎨 Updated image to match style (set mode):', prefs.style, '->', matchingComponent.imageUrl);
+                    // Only update currentImage if no custom image is selected
+                    if (!prefs.selectedImageUrl || prefs.selectedImageUrl === '') {
+                      setCurrentImage(convertToPngIfCloudinary(matchingComponent.imageUrl));
+                    }
                   }
                 }
               }

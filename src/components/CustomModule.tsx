@@ -1,7 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import './CustomModule.css';
-import { getPluginImages, PluginImage } from '../services/imageService';
+import { getPluginImages, PluginImage, cloudinaryService } from '../services/imageService';
 import { ComponentPreferences, selectComponentVariant, groupComponentsByMaster, componentService } from '../services/componentService';
+
+// Helper function to extract filename from URL
+const getDisplayName = (type: string, value: string): string => {
+  if (type === 'image' && value && value !== 'Dark' && value !== 'Light') {
+    // Extract filename from URL
+    try {
+      const url = new URL(value);
+      const pathname = url.pathname;
+      const filename = pathname.split('/').pop() || '';
+      // Remove file extension and limit to 15 characters
+      const nameWithoutExt = filename.split('.')[0];
+      return nameWithoutExt.length > 15 ? nameWithoutExt.substring(0, 15) + '...' : nameWithoutExt;
+    } catch {
+      // If URL parsing fails, return a generic name
+      return 'Custom Image';
+    }
+  }
+  return value;
+};
 
 interface CustomModuleProps {
   className?: string;
@@ -103,16 +122,14 @@ const CustomModule: React.FC<CustomModuleProps> = ({
     setShowImageSelector(false);
   };
 
+
+
+
+
   const handleApplyChanges = async () => {
-    // Update database if image was selected and componentId is provided
-    if (selectedImage && componentId) {
-      try {
-        await componentService.updateComponent(componentId, { imageUrl: selectedImage });
-        console.log('✅ Updated component image in database:', componentId, selectedImage);
-      } catch (error) {
-        console.error('❌ Failed to update component image in database:', error);
-      }
-    }
+    // DON'T update database - keep the default variant image unchanged
+    // The custom image should only be used for temporary preview
+    console.log('🖼️ Custom image selected for temporary preview (not saved to database):', selectedImage);
 
     // Filtering only: just pass preferences to parent
     onApplyChanges?.({
@@ -166,7 +183,7 @@ const CustomModule: React.FC<CustomModuleProps> = ({
             className={`custom__module--drop-down ${expandedDropdown === type ? 'expanded' : ''}`}
             onClick={() => handleDropdownClick(type)}
           >
-            <span className="drop-down-text">{selectedOptions[type as keyof typeof selectedOptions]}</span>
+            <span className="drop-down-text">{getDisplayName(type, selectedOptions[type as keyof typeof selectedOptions])}</span>
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M4.50002 3L7.5 6L4.5 9" stroke="black" strokeMiterlimit="16" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -184,7 +201,7 @@ const CustomModule: React.FC<CustomModuleProps> = ({
                       handleOptionSelect(type, option);
                     }}
                   >
-                    <span className="custom__module--drop-down-option-text">{option}</span>
+                    <span className="custom__module--drop-down-option-text">{getDisplayName(type, option)}</span>
                   </div>
                 ))}
               </div>
@@ -214,16 +231,16 @@ const CustomModule: React.FC<CustomModuleProps> = ({
                   </svg>
                 </button>
               </div>
+
               {/* Image Grid */}
-              <div className="custom__module--image-grid" style={{display:'flex',gap:'16px',flexWrap:'wrap',marginTop:'16px'}}>
+              <div className="custom__module--image-grid" style={{display:'flex',gap:'16px',flexWrap:'wrap',marginTop:'20px'}}>
                 {loadingImages ? (
                   <div style={{width:'100%',textAlign:'center',padding:'20px'}}>
-                    <p>Loading images from Firebase...</p>
+                    <p>Loading images...</p>
                   </div>
                 ) : availableImages.length === 0 ? (
                   <div style={{width:'100%',textAlign:'center',padding:'20px'}}>
-                    <p>No images found in the plugin-images collection.</p>
-                    <p style={{fontSize:'12px',color:'#888'}}>Please add images to your Firebase plugin-images collection.</p>
+                    <p>No images available.</p>
                   </div>
                 ) : (
                   availableImages.map((image) => (
@@ -237,10 +254,13 @@ const CustomModule: React.FC<CustomModuleProps> = ({
                         cursor: 'pointer',
                         width: '120px',
                         textAlign: 'center',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease',
+                        position: 'relative'
                       }}
                       onClick={() => handleImageSelect(image.url)}
                     >
+
+                      
                       <img 
                         src={image.url} 
                         alt={image.name} 
@@ -263,6 +283,7 @@ const CustomModule: React.FC<CustomModuleProps> = ({
                   ))
                 )}
               </div>
+              
               {/* Actions */}
               <div className="custom__module--actions" style={{marginTop:'16px'}}>
                 <div className="actions-content">
