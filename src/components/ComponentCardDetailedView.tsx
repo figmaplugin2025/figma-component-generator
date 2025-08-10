@@ -77,63 +77,205 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
     let imageUrl = '';
     
     if (data.variants && data.variants.length > 0) {
-      // Check if user has selected a specific style
+      // Check if user has selected specific preferences
       const selectedStyle = customizationPreferences?.style?.toLowerCase();
       const selectedSize = customizationPreferences?.size?.toLowerCase() || 'large';
       
-      if (selectedStyle) {
-        // Find the variant that matches the user's selection
-        const selectedVariant = data.variants.find(variant => {
-          const name = variant.name.toLowerCase();
-          return name.includes(selectedStyle) && name.includes(selectedSize);
-        });
+      console.log('🔍 getVariantImage - User preferences:', { selectedStyle, selectedSize });
+      console.log('🔍 Available variants:', data.variants.map(v => v.name));
+      
+      if (selectedStyle || selectedSize) {
+        // Find the variant that best matches the user's selection
+        let selectedVariant = null;
+        
+        // First, try to find exact match (both style and size)
+        if (selectedStyle && selectedSize) {
+          selectedVariant = data.variants.find(variant => {
+            const name = variant.name.toLowerCase();
+            return name.includes(selectedStyle) && name.includes(selectedSize);
+          });
+          console.log('🔍 Looking for exact match (style + size):', selectedStyle, selectedSize);
+        }
+        
+        // If no exact match, try to find style match first
+        if (!selectedVariant && selectedStyle) {
+          selectedVariant = data.variants.find(variant => {
+            const name = variant.name.toLowerCase();
+            return name.includes(selectedStyle);
+          });
+          console.log('🔍 Looking for style match only:', selectedStyle);
+        }
+        
+        // If still no match, try to find size match first
+        if (!selectedVariant && selectedSize) {
+          selectedVariant = data.variants.find(variant => {
+            const name = variant.name.toLowerCase();
+            return name.includes(selectedSize);
+          });
+          console.log('🔍 Looking for size match only:', selectedSize);
+        }
         
         if (selectedVariant) {
+          console.log('✅ Found matching variant:', selectedVariant.name);
           imageUrl = selectedVariant.imageUrl;
         } else {
-          // Fallback to dark/large variant if selected variant not found
-          const darkLargeVariant = data.variants.find(variant => {
-            const name = variant.name.toLowerCase();
-            return name.includes('dark') && name.includes('large');
-          });
-          
-          if (darkLargeVariant) {
-            imageUrl = darkLargeVariant.imageUrl;
-          } else {
-            imageUrl = data.variants[0].imageUrl;
-          }
-        }
-      } else {
-        // Default to dark/large variant if no style selected
-        const darkLargeVariant = data.variants.find(variant => {
-          const name = variant.name.toLowerCase();
-          return name.includes('dark') && name.includes('large');
-        });
-        
-        if (darkLargeVariant) {
-          imageUrl = darkLargeVariant.imageUrl;
-        } else {
+          console.log('⚠️ No matching variant found, using first available variant');
           imageUrl = data.variants[0].imageUrl;
         }
+      } else {
+        // No preferences selected - show the first available variant (usually the default)
+        console.log('🔍 No preferences selected, showing first available variant');
+        imageUrl = data.variants[0].imageUrl;
       }
     } else {
       imageUrl = data.image;
     }
     
+    console.log('🖼️ Final image URL:', imageUrl);
     return convertToPngIfCloudinary(imageUrl);
   };
 
-  const [currentImage, setCurrentImage] = useState(data.image || '');
+  // Get the correct variant's figmaComponentKey based on user preferences
+  const getCorrectVariantKey = () => {
+    if (data.variants && data.variants.length > 0) {
+      const selectedStyle = customizationPreferences?.style?.toLowerCase();
+      const selectedSize = customizationPreferences?.size?.toLowerCase() || 'large';
+      
+      // Find the variant that best matches the user's selection
+      let selectedVariant = null;
+      
+      // First, try to find exact match (both style and size)
+      if (selectedStyle && selectedSize) {
+        selectedVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes(selectedStyle) && name.includes(selectedSize);
+        });
+        console.log('🔍 getCorrectVariantKey - Looking for exact match (style + size):', selectedStyle, selectedSize);
+      }
+      
+      // If no exact match, try to find style match first
+      if (!selectedVariant && selectedStyle) {
+        selectedVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes(selectedStyle);
+        });
+        console.log('🔍 getCorrectVariantKey - Looking for style match only:', selectedStyle);
+      }
+      
+      // If still no match, try to find size match first
+      if (!selectedVariant && selectedSize) {
+        selectedVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes(selectedSize);
+        });
+        console.log('🔍 getCorrectVariantKey - Looking for size match only:', selectedSize);
+      }
+      
+      if (selectedVariant) {
+        console.log('✅ getCorrectVariantKey - Found matching variant:', selectedVariant.name);
+        console.log('✅ getCorrectVariantKey - Using variant key:', selectedVariant.figmaComponentKey);
+        return selectedVariant.figmaComponentKey;
+      } else {
+        console.log('⚠️ getCorrectVariantKey - No matching variant found, falling back to master key');
+        return data.figmaComponentKey;
+      }
+    } else {
+      console.log('🔍 getCorrectVariantKey - No variants, using master key');
+      return data.figmaComponentKey;
+    }
+  };
+
+  // Get the correct variant's figmaComponentKey based on explicit preferences
+  const getCorrectVariantKeyWithPreferences = (preferences: Record<string, string>) => {
+    if (data.variants && data.variants.length > 0) {
+      const selectedStyle = preferences?.style?.toLowerCase();
+      const selectedSize = preferences?.size?.toLowerCase() || 'large';
+      
+      // Find the variant that best matches the user's selection
+      let selectedVariant = null;
+      
+      // First, try to find exact match (both style and size)
+      if (selectedStyle && selectedSize) {
+        selectedVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes(selectedStyle) && name.includes(selectedSize);
+        });
+        console.log('🔍 getCorrectVariantKeyWithPreferences - Looking for exact match (style + size):', selectedStyle, selectedSize);
+      }
+      
+      // If no exact match, try to find style match first
+      if (!selectedVariant && selectedStyle) {
+        selectedVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes(selectedStyle);
+        });
+        console.log('🔍 getCorrectVariantKeyWithPreferences - Looking for style match only:', selectedStyle);
+      }
+      
+      // If still no match, try to find size match first
+      if (!selectedVariant && selectedSize) {
+        selectedVariant = data.variants.find(variant => {
+          const name = variant.name.toLowerCase();
+          return name.includes(selectedSize);
+        });
+        console.log('🔍 getCorrectVariantKeyWithPreferences - Looking for size match only:', selectedSize);
+      }
+      
+      if (selectedVariant) {
+        console.log('✅ getCorrectVariantKeyWithPreferences - Found matching variant:', selectedVariant.name);
+        console.log('✅ getCorrectVariantKeyWithPreferences - Using variant key:', selectedVariant.figmaComponentKey);
+        return selectedVariant.figmaComponentKey;
+      } else {
+        console.log('⚠️ getCorrectVariantKeyWithPreferences - No matching variant found, falling back to master key');
+        return data.figmaComponentKey;
+      }
+    } else {
+      console.log('🔍 getCorrectVariantKeyWithPreferences - No variants, using master key');
+      return data.figmaComponentKey;
+    }
+  };
+
+  const [currentImage, setCurrentImage] = useState(() => {
+    // Initialize with the .dark/.large variant specifically (default)
+    if (data.variants && data.variants.length > 0) {
+      // Find the .dark/.large variant specifically
+      const darkLargeVariant = data.variants.find(variant => 
+        variant.name.toLowerCase().includes('dark') && variant.name.toLowerCase().includes('large')
+      );
+      
+      if (darkLargeVariant) {
+        console.log('🎯 Initializing with .dark/.large variant:', darkLargeVariant.name);
+        return convertToPngIfCloudinary(darkLargeVariant.imageUrl);
+      } else {
+        // Fallback to first variant if .dark/.large not found
+        console.log('⚠️ .dark/.large variant not found, using first available variant');
+        return convertToPngIfCloudinary(data.variants[0].imageUrl);
+      }
+    }
+    return data.image || '';
+  });
   const [temporaryPreviewUrl, setTemporaryPreviewUrl] = useState<string>(''); // For temporary preview
   const [isGeneratingPreview, setIsGeneratingPreview] = useState(false); // Track if we're generating preview
   const [customizationPreferences, setCustomizationPreferences] = useState<Record<string, string>>({});
   const [hasCustomizations, setHasCustomizations] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'warning' | 'error', message: string } | null>(null);
 
-  // Update current image after component mounts to avoid initialization issues
+  // ❌ REMOVED: Problematic initial useEffect that caused wrong initial image
+
+  // Update current image when customization preferences change
   useEffect(() => {
-    setCurrentImage(getVariantImage());
-  }, []);
+    if (Object.keys(customizationPreferences).length > 0) {
+      console.log('🔄 Preferences changed, updating image...');
+      const newImage = getVariantImage();
+      setCurrentImage(newImage);
+      
+      // Clear temporary preview when preferences change so the correct variant image is shown
+      if (temporaryPreviewUrl) {
+        console.log('🔄 Clearing temporary preview to show correct variant');
+        setTemporaryPreviewUrl('');
+      }
+    }
+  }, [customizationPreferences]);
 
 
   // Create temporary preview image for immediate visual feedback
@@ -147,12 +289,20 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         const previewComponentId = `temp-preview-${data.id}-${Date.now()}`;
         
         // Send message to code.ts to generate the full component preview
+        const variantKey = Object.keys(customizationPreferences).length > 0 ? getCorrectVariantKey() : data.figmaComponentKey;
+        console.log('🔍 DEBUG: About to send figmaComponentKey to Figma plugin:', {
+          hasPreferences: Object.keys(customizationPreferences).length > 0,
+          preferences: customizationPreferences,
+          variantKey: variantKey,
+          masterKey: data.figmaComponentKey
+        });
+        
         window.parent.postMessage({
           pluginMessage: {
             type: 'generate-temporary-preview',
             componentId: previewComponentId,
             figmaFileId: data.figmaFileId,
-            figmaComponentKey: data.figmaComponentKey,
+            figmaComponentKey: variantKey,
             title: data.title,
             specs: data.specs,
             customImageUrl: customImageUrl
@@ -232,6 +382,100 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
       const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
       setTemporaryPreviewUrl(tempPreviewUrl);
       console.log('🔄 Fallback to Cloudinary URL:', tempPreviewUrl);
+    }
+  };
+
+  // Create temporary preview with explicit preferences (for immediate use)
+  const createTemporaryPreviewWithPreferences = async (customImageUrl: string, preferences: Record<string, string>) => {
+    try {
+      setIsGeneratingPreview(true);
+      
+      // Generate the full component preview with custom image inserted
+      if (window.parent && window.parent !== window) {
+        const previewComponentId = `temp-preview-${data.id}-${Date.now()}`;
+        
+        // Use the preferences directly to get the correct variant key
+        const variantKey = Object.keys(preferences).length > 0 ? getCorrectVariantKeyWithPreferences(preferences) : data.figmaComponentKey;
+        console.log('🔍 DEBUG: createTemporaryPreviewWithPreferences - About to send figmaComponentKey to Figma plugin:', {
+          hasPreferences: Object.keys(preferences).length > 0,
+          preferences: preferences,
+          variantKey: variantKey,
+          masterKey: data.figmaComponentKey
+        });
+        
+        window.parent.postMessage({
+          pluginMessage: {
+            type: 'generate-temporary-preview',
+            componentId: previewComponentId,
+            figmaFileId: data.figmaFileId,
+            figmaComponentKey: variantKey,
+            title: data.title,
+            specs: data.specs,
+            customImageUrl: customImageUrl
+          }
+        }, '*');
+        
+        console.log('⏳ Generating component preview with preferences...');
+        
+        // Listen for the response from code.ts
+        const handleMessage = async (event: MessageEvent) => {
+          if (event.data.pluginMessage?.type === 'temporary-preview-generated') {
+            const { componentId, previewDataUrl } = event.data.pluginMessage;
+            
+            if (componentId === previewComponentId) {
+              try {
+                const { imageService } = await import('../services/imageService');
+                
+                const response = await fetch(previewDataUrl);
+                const blob = await response.blob();
+                
+                const file = new File([blob], `temp-preview-${data.id}-${Date.now()}.png`, {
+                  type: 'image/png'
+                });
+                
+                const uploadResult = await imageService.uploadGeneratedComponentPreview(file, data.id);
+                setTemporaryPreviewUrl(uploadResult.url);
+                console.log('✅ Component preview uploaded with preferences');
+                
+              } catch (error) {
+                console.error('❌ Upload failed, using fallback');
+                const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+                setTemporaryPreviewUrl(tempPreviewUrl);
+              }
+              
+              // Clear generating state
+              setIsGeneratingPreview(false);
+              
+              // Remove the event listener
+              window.removeEventListener('message', handleMessage);
+            }
+          }
+        };
+        
+        // Add event listener for the response
+        window.addEventListener('message', handleMessage);
+        
+        // Set a timeout to clean up if no response
+        setTimeout(() => {
+          window.removeEventListener('message', handleMessage);
+          setIsGeneratingPreview(false);
+          console.log('⏰ Timeout: No response from Figma plugin, using fallback');
+          const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+          setTemporaryPreviewUrl(tempPreviewUrl);
+        }, 10000);
+        
+      } else {
+        // Fallback for non-Figma environment
+        const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+        setTemporaryPreviewUrl(tempPreviewUrl);
+        console.log('🔄 Fallback to Cloudinary URL with preferences:', tempPreviewUrl);
+      }
+    } catch (error) {
+      console.error('❌ Error in createTemporaryPreviewWithPreferences:', error);
+      setIsGeneratingPreview(false);
+      // Fallback
+      const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+      setTemporaryPreviewUrl(tempPreviewUrl);
     }
   };
 
@@ -393,18 +637,12 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
     }
   };
 
-  // Debug logging
-  console.log('🔍 ComponentCardDetailedView received data:', data);
-  console.log('🖼️ Image URL:', data.image);
-  console.log('🖼️ Image URL type:', typeof data.image);
-  console.log('🖼️ Image URL length:', data.image?.length);
-  console.log('🖼️ Is image URL empty?', !data.image || data.image.trim() === '');
-  console.log('🔍 isMasterComponent:', data.isMasterComponent);
-  console.log('🔍 variants:', data.variants);
-  console.log('🔍 variantCount:', data.variantCount);
-  console.log('🔍 figmaComponentId:', data.figmaComponentId);
-  console.log('🔍 figmaFileId:', data.figmaFileId);
-  console.log('🔍 figmaComponentKey:', data.figmaComponentKey);
+  // Debug logging - only log essential info
+  console.log('🔍 ComponentCardDetailedView received data:', { 
+    id: data.id, 
+    title: data.title, 
+    hasVariants: !!data.variants?.length 
+  });
 
   return (
     <div className="component-detail-page">
@@ -442,6 +680,46 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
       {/* Component Details Image Section - Generated Preview */}
       <div className="component__details--image">
         <div className="component__details--image-container" style={{ position: 'relative' }}>
+          {/* Loading Animation - Show while generating preview */}
+          {isGeneratingPreview && (
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              zIndex: 20,
+              borderRadius: '8px'
+            }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  border: '4px solid #f3f3f3',
+                  borderTop: '4px solid #FF5C0A',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }}></div>
+                <div style={{
+                  color: '#FF5C0A',
+                  fontSize: '14px',
+                  fontWeight: '500'
+                }}>
+                  Generating Preview...
+                </div>
+              </div>
+            </div>
+          )}
+          
           {(() => {
             // Show temporary preview if available, otherwise show current image
             const displayImageUrl = temporaryPreviewUrl || currentImage;
@@ -594,7 +872,16 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         componentData={{
           figmaComponentId: data.figmaComponentId,
           figmaFileId: data.figmaFileId,
-          figmaComponentKey: data.figmaComponentKey,
+          figmaComponentKey: (() => {
+            const variantKey = Object.keys(customizationPreferences).length > 0 ? getCorrectVariantKey() : data.figmaComponentKey;
+            console.log('🔍 DEBUG: ComponentDetailsActions figmaComponentKey:', {
+              hasPreferences: Object.keys(customizationPreferences).length > 0,
+              preferences: customizationPreferences,
+              variantKey: variantKey,
+              masterKey: data.figmaComponentKey
+            });
+            return variantKey;
+          })(),
           title: data.title,
           specs: data.specs,
           isMasterComponent: data.isMasterComponent,
@@ -622,21 +909,24 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
           availableComponents={getAvailableComponents()}
           componentId={data.id}
           onApplyChanges={async prefs => {
+            // Set preferences first
             setCustomizationPreferences(prefs);
             setHasCustomizations(true);
             
-            // Update current image based on new preferences
+            // Clear any existing temporary preview first
+            if (temporaryPreviewUrl) {
+              console.log('🔄 Clearing existing temporary preview');
+              setTemporaryPreviewUrl('');
+            }
+            
+            // Update current image based on new preferences - ONLY use getVariantImage()
             const newImage = getVariantImage();
             setCurrentImage(newImage);
             
+            // Calculate customization count
             let count = 0;
-            
             if (customizationMode === 'single') {
-              const defaults = {
-                size: 'Large',
-                style: 'Dark', 
-                image: 'Dark'
-              };
+              const defaults = { size: 'Large', style: 'Dark', image: 'Dark' };
               const singleOptions = ['size', 'style', 'image'];
               count = singleOptions.filter(option => 
                 prefs[option] !== undefined && 
@@ -644,42 +934,8 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                 prefs[option] !== '' &&
                 prefs[option] !== defaults[option as keyof typeof defaults]
               ).length;
-              
-              if (prefs.style && prefs.style !== defaults.style) {
-                const availableComponents = getAvailableComponents();
-                const grouped = groupComponentsByMaster(availableComponents);
-                const masterNames = Object.keys(grouped);
-                if (masterNames.length > 0) {
-                  const size = (prefs.size || 'Large').toLowerCase() as 'large' | 'small';
-                  const style = prefs.style.toLowerCase() as 'dark' | 'light';
-                  const matchingComponent = selectComponentVariant(grouped[masterNames[0]], { size, style });
-                  if (matchingComponent) {
-                    // Always update to the correct variant first
-                    setCurrentImage(convertToPngIfCloudinary(matchingComponent.imageUrl));
-                    
-                    // If there's a custom image, apply it on top of the correct variant
-                    if (prefs.selectedImageUrl && prefs.selectedImageUrl !== '') {
-                      try {
-                        console.log('🖼️ Live preview: Creating temporary preview with custom image on correct variant');
-                        console.log('🖼️ Custom image URL:', prefs.selectedImageUrl);
-                        
-                        // Create temporary preview with custom image on the correct variant
-                        await createTemporaryPreview(prefs.selectedImageUrl);
-                        
-                        console.log('🖼️ Live preview: Temporary preview created with custom image on correct variant');
-                        
-                      } catch (error) {
-                        console.error('❌ Failed to create temporary preview:', error);
-                      }
-                    }
-                  }
-                }
-              }
             } else if (customizationMode === 'set') {
-              const defaults = {
-                state: 'Theme, State, Size',
-                style: 'Dark'
-              };
+              const defaults = { state: 'Theme, State, Size', style: 'Dark' };
               const setOptions = ['state', 'style'];
               count = setOptions.filter(option => 
                 prefs[option] !== undefined && 
@@ -687,24 +943,19 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                 prefs[option] !== '' &&
                 prefs[option] !== defaults[option as keyof typeof defaults]
               ).length;
-              
-              if (prefs.style && prefs.style !== defaults.style) {
-                const availableComponents = getAvailableComponents();
-                const grouped = groupComponentsByMaster(availableComponents);
-                const masterNames = Object.keys(grouped);
-                if (masterNames.length > 0) {
-                  const style = prefs.style.toLowerCase() as 'dark' | 'light';
-                  const matchingComponent = selectComponentVariant(grouped[masterNames[0]], { size: 'large', style });
-                  if (matchingComponent) {
-                    // Only update currentImage if no custom image is selected
-                    if (!prefs.selectedImageUrl || prefs.selectedImageUrl === '') {
-                      setCurrentImage(convertToPngIfCloudinary(matchingComponent.imageUrl));
-                    }
-                  }
-                }
-              }
             }
             setCustomizationCount(count);
+            
+            // If there's a custom image, create temporary preview AFTER preferences are set
+            if (prefs.selectedImageUrl && prefs.selectedImageUrl !== '') {
+              try {
+                console.log('🖼️ Creating temporary preview with custom image');
+                // Use the preferences directly instead of relying on state
+                await createTemporaryPreviewWithPreferences(prefs.selectedImageUrl, prefs);
+              } catch (error) {
+                console.error('❌ Failed to create temporary preview:', error);
+              }
+            }
           }}
         />
       )}

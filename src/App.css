@@ -1319,3 +1319,9 @@ NewsCard Component
   font-size: 10px;
   font-weight: 500;
 }
+
+/* Loading spinner animation for component preview generation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
