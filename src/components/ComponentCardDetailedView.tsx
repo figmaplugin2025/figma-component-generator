@@ -573,10 +573,25 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
     setCustomizationMode(null);
   };
 
-  const handleReset = () => {
-    setCustomizationCount(0);
-    setCurrentImage(getVariantImage());
+  // Get the default dark/large variant image
+  const getDefaultDarkLargeImage = () => {
+    if (data.variants && data.variants.length > 0) {
+      const darkLargeVariant = data.variants.find(variant => 
+        variant.name.toLowerCase().includes('dark') && variant.name.toLowerCase().includes('large')
+      );
+      if (darkLargeVariant) {
+        console.log('🎯 Returning to default .dark/.large variant:', darkLargeVariant.name);
+        return convertToPngIfCloudinary(darkLargeVariant.imageUrl);
+      }
+    }
+    // Fallback to first variant or master image
+    return data.variants && data.variants.length > 0 
+      ? convertToPngIfCloudinary(data.variants[0].imageUrl)
+      : convertToPngIfCloudinary(data.image || '');
+  };
 
+  const handleReset = () => {
+    setCurrentImage(getDefaultDarkLargeImage()); // Reset to default dark/large
     setTemporaryPreviewUrl(''); // Clear temporary preview
     setCustomizationPreferences({});
     setHasCustomizations(false);
@@ -631,9 +646,13 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
       // Clear temporary preview after generation (including Firebase cleanup)
       await clearTemporaryPreview();
       
+      // Reset to default dark/large variant after generation
+      setCurrentImage(getDefaultDarkLargeImage());
       setCustomizationPreferences({});
       setHasCustomizations(false);
       setCustomizationCount(0);
+      
+      console.log('🔄 Reset to default .dark/.large variant after generation');
     }
   };
 
@@ -922,6 +941,13 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
             // Update current image based on new preferences - ONLY use getVariantImage()
             const newImage = getVariantImage();
             setCurrentImage(newImage);
+            
+            // Log the variant change
+            console.log('🎨 Variant changed to:', {
+              style: prefs.style || 'Dark',
+              size: prefs.size || 'Large',
+              image: prefs.image || 'Default'
+            });
             
             // Calculate customization count
             let count = 0;
