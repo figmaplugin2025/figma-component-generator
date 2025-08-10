@@ -334,9 +334,18 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                 console.log('✅ Component preview uploaded');
                 
               } catch (error) {
-                console.error('❌ Upload failed, using fallback');
-                const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-                setTemporaryPreviewUrl(tempPreviewUrl);
+                console.error('❌ Upload failed, using Firebase fallback');
+                // Try to use the Firebase image instead of Cloudinary
+                const firebaseImage = getVariantImage();
+                if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+                  setTemporaryPreviewUrl(firebaseImage);
+                  console.log('🔄 Using Firebase image as fallback:', firebaseImage);
+                } else {
+                  // Only use Cloudinary as absolute last resort
+                  const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+                  setTemporaryPreviewUrl(tempPreviewUrl);
+                  console.log('🔄 Using Cloudinary as last resort:', tempPreviewUrl);
+                }
               }
               
               // Clear generating state
@@ -349,9 +358,18 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
             const { componentId, error } = event.data.pluginMessage;
             
             if (componentId === previewComponentId) {
-              console.error('❌ Preview generation failed');
-              const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-              setTemporaryPreviewUrl(tempPreviewUrl);
+              console.error('❌ Preview generation failed, using Firebase fallback');
+              // Try to use the Firebase image instead of Cloudinary
+              const firebaseImage = getVariantImage();
+              if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+                setTemporaryPreviewUrl(firebaseImage);
+                console.log('🔄 Using Firebase image as error fallback:', firebaseImage);
+              } else {
+                // Only use Cloudinary as absolute last resort
+                const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+                setTemporaryPreviewUrl(tempPreviewUrl);
+                console.log('🔄 Using Cloudinary as error last resort:', tempPreviewUrl);
+              }
               setIsGeneratingPreview(false);
               window.removeEventListener('message', handleMessage);
             }
@@ -364,8 +382,18 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         // Set a timeout as fallback
         setTimeout(() => {
           if (isGeneratingPreview) {
-            const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-            setTemporaryPreviewUrl(tempPreviewUrl);
+            console.log('⏰ Timeout: No response from Figma plugin, using Firebase fallback');
+            // Try to use the Firebase image instead of Cloudinary
+            const firebaseImage = getVariantImage();
+            if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+              setTemporaryPreviewUrl(firebaseImage);
+              console.log('🔄 Using Firebase image as timeout fallback:', firebaseImage);
+            } else {
+              // Only use Cloudinary as absolute last resort
+              const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+              setTemporaryPreviewUrl(tempPreviewUrl);
+              console.log('🔄 Using Cloudinary as timeout last resort:', tempPreviewUrl);
+            }
             setIsGeneratingPreview(false);
           }
           window.removeEventListener('message', handleMessage);
@@ -373,17 +401,32 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         
       } else {
         // Fallback if no parent window
-        const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-        setTemporaryPreviewUrl(tempPreviewUrl);
-        console.log('🔄 Fallback to Cloudinary URL:', tempPreviewUrl);
+        console.log('🔄 No parent window, using Firebase fallback');
+        const firebaseImage = getVariantImage();
+        if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+          setTemporaryPreviewUrl(firebaseImage);
+          console.log('🔄 Using Firebase image as no-parent fallback:', firebaseImage);
+        } else {
+          // Only use Cloudinary as absolute last resort
+          const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+          setTemporaryPreviewUrl(tempPreviewUrl);
+          console.log('🔄 Using Cloudinary as no-parent last resort:', tempPreviewUrl);
+        }
       }
       
     } catch (error) {
       console.error('❌ Failed to create temporary preview:', error);
-      // Fallback to using the Cloudinary URL directly
-      const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-      setTemporaryPreviewUrl(tempPreviewUrl);
-      console.log('🔄 Fallback to Cloudinary URL:', tempPreviewUrl);
+      // Try Firebase image first, then Cloudinary as last resort
+      const firebaseImage = getVariantImage();
+      if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+        setTemporaryPreviewUrl(firebaseImage);
+        console.log('🔄 Using Firebase image as error fallback:', firebaseImage);
+      } else {
+        // Only use Cloudinary as absolute last resort
+        const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+        setTemporaryPreviewUrl(tempPreviewUrl);
+        console.log('🔄 Using Cloudinary as error last resort:', tempPreviewUrl);
+      }
     }
   };
 
@@ -440,9 +483,18 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                 console.log('✅ Component preview uploaded with preferences');
                 
               } catch (error) {
-                console.error('❌ Upload failed, using fallback');
-                const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-                setTemporaryPreviewUrl(tempPreviewUrl);
+                console.error('❌ Upload failed, using Firebase fallback');
+                // Try to use the Firebase image instead of Cloudinary
+                const firebaseImage = getVariantImage();
+                if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+                  setTemporaryPreviewUrl(firebaseImage);
+                  console.log('🔄 Using Firebase image as fallback:', firebaseImage);
+                } else {
+                  // Only use Cloudinary as absolute last resort
+                  const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+                  setTemporaryPreviewUrl(tempPreviewUrl);
+                  console.log('🔄 Using Cloudinary as last resort:', tempPreviewUrl);
+                }
               }
               
               // Clear generating state
@@ -461,23 +513,48 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
         setTimeout(() => {
           window.removeEventListener('message', handleMessage);
           setIsGeneratingPreview(false);
-          console.log('⏰ Timeout: No response from Figma plugin, using fallback');
-          const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-          setTemporaryPreviewUrl(tempPreviewUrl);
+          console.log('⏰ Timeout: No response from Figma plugin, using Firebase fallback');
+          // Try to use the Firebase image instead of Cloudinary
+          const firebaseImage = getVariantImage();
+          if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+            setTemporaryPreviewUrl(firebaseImage);
+            console.log('🔄 Using Firebase image as timeout fallback:', firebaseImage);
+          } else {
+            // Only use Cloudinary as absolute last resort
+            const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+            setTemporaryPreviewUrl(tempPreviewUrl);
+            console.log('🔄 Using Cloudinary as timeout last resort:', tempPreviewUrl);
+          }
         }, 10000);
         
       } else {
         // Fallback for non-Figma environment
-        const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-        setTemporaryPreviewUrl(tempPreviewUrl);
-        console.log('🔄 Fallback to Cloudinary URL with preferences:', tempPreviewUrl);
+        console.log('🔄 Non-Figma environment, using Firebase fallback');
+        const firebaseImage = getVariantImage();
+        if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+          setTemporaryPreviewUrl(firebaseImage);
+          console.log('🔄 Using Firebase image as non-Figma fallback:', firebaseImage);
+        } else {
+          // Only use Cloudinary as absolute last resort
+          const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+          setTemporaryPreviewUrl(tempPreviewUrl);
+          console.log('🔄 Using Cloudinary as non-Figma last resort:', tempPreviewUrl);
+        }
       }
     } catch (error) {
       console.error('❌ Error in createTemporaryPreviewWithPreferences:', error);
       setIsGeneratingPreview(false);
-      // Fallback
-      const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
-      setTemporaryPreviewUrl(tempPreviewUrl);
+      // Try Firebase image first, then Cloudinary as last resort
+      const firebaseImage = getVariantImage();
+      if (firebaseImage && firebaseImage.includes('firebasestorage.googleapis.com')) {
+        setTemporaryPreviewUrl(firebaseImage);
+        console.log('🔄 Using Firebase image as error fallback:', firebaseImage);
+      } else {
+        // Only use Cloudinary as absolute last resort
+        const tempPreviewUrl = convertToPngIfCloudinary(customImageUrl);
+        setTemporaryPreviewUrl(tempPreviewUrl);
+        console.log('🔄 Using Cloudinary as error last resort:', tempPreviewUrl);
+      }
     }
   };
 
