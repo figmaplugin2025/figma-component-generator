@@ -266,16 +266,18 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
   useEffect(() => {
     if (Object.keys(customizationPreferences).length > 0) {
       console.log('🔄 Preferences changed, updating image...');
-      const newImage = getVariantImage();
-      setCurrentImage(newImage);
       
-      // Clear temporary preview when preferences change so the correct variant image is shown
-      if (temporaryPreviewUrl) {
-        console.log('🔄 Clearing temporary preview to show correct variant');
-        setTemporaryPreviewUrl('');
+      // Only update currentImage if there's no temporary preview active
+      // This prevents the temporary preview from being overridden
+      if (!temporaryPreviewUrl) {
+        const newImage = getVariantImage();
+        setCurrentImage(newImage);
+        console.log('🔄 Updated currentImage to variant:', newImage);
+      } else {
+        console.log('🔄 Skipping currentImage update - temporary preview is active');
       }
     }
-  }, [customizationPreferences]);
+  }, [customizationPreferences, temporaryPreviewUrl]);
 
 
   // Create temporary preview image for immediate visual feedback
