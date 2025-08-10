@@ -267,14 +267,14 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
     if (Object.keys(customizationPreferences).length > 0) {
       console.log('🔄 Preferences changed, updating image...');
       
-      // Only update currentImage if there's no temporary preview active
-      // This prevents the temporary preview from being overridden
+      // NEVER update currentImage if there's a temporary preview active
+      // This ensures the temporary preview stays visible until reset or generate
       if (!temporaryPreviewUrl) {
         const newImage = getVariantImage();
         setCurrentImage(newImage);
         console.log('🔄 Updated currentImage to variant:', newImage);
       } else {
-        console.log('🔄 Skipping currentImage update - temporary preview is active');
+        console.log('🔄 PERMANENTLY skipping currentImage update - temporary preview is active and will stay');
       }
     }
   }, [customizationPreferences, temporaryPreviewUrl]);
@@ -845,8 +845,9 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
                   }}
                   onError={(e) => {
                     console.error('❌ Failed to load temporary preview image:', displayImageUrl);
-                    // Fallback to current image
-                    setTemporaryPreviewUrl('');
+                    // Don't clear temporary preview on error - let it stay visible
+                    // This prevents the image from disappearing when there are loading issues
+                    console.log('🔄 Keeping temporary preview visible despite loading error');
                   }}
                 />
                 
@@ -1011,16 +1012,6 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
             setCustomizationPreferences(prefs);
             setHasCustomizations(true);
             
-            // Clear any existing temporary preview first
-            if (temporaryPreviewUrl) {
-              console.log('🔄 Clearing existing temporary preview');
-              setTemporaryPreviewUrl('');
-            }
-            
-            // Update current image based on new preferences - ONLY use getVariantImage()
-            const newImage = getVariantImage();
-            setCurrentImage(newImage);
-            
             // Log the variant change
             console.log('🎨 Variant changed to:', {
               style: prefs.style || 'Dark',
@@ -1060,6 +1051,12 @@ const ComponentCardDetailedView: React.FC<ComponentCardDetailedViewProps> = ({
               } catch (error) {
                 console.error('❌ Failed to create temporary preview:', error);
               }
+            } else {
+              // Only update current image if there's NO custom image
+              // This prevents overriding the temporary preview
+              const newImage = getVariantImage();
+              setCurrentImage(newImage);
+              console.log('🔄 Updated currentImage to variant (no custom image):', newImage);
             }
           }}
         />
